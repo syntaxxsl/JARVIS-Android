@@ -25,34 +25,63 @@ class JarvisAccessibilityService : AccessibilityService() {
 
     fun readVisibleText(): String {
         val root = rootInActiveWindow ?: return "Ekran içeriğine erişilemiyor."
-        val lines = mutableListOf<String>()
-        collectText(root, lines)
-        return lines.distinct().take(120).joinToString("\n").ifBlank { "Ekranda okunabilir metin bulunamadı." }
+        return try {
+            val lines = mutableListOf<String>()
+            collectText(root, lines)
+            lines.distinct().take(120).joinToString("\n").ifBlank { "Ekranda okunabilir metin bulunamadı." }
+        } finally {
+            root.recycle()
+        }
     }
 
     fun clickText(target: String): Boolean {
         val root = rootInActiveWindow ?: return false
-        val node = findNode(root) { it.text?.toString()?.contains(target, ignoreCase = true) == true ||
-            it.contentDescription?.toString()?.contains(target, ignoreCase = true) == true } ?: return false
-        return clickableParent(node)?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
+        return try {
+            val node = findNode(root) { it.text?.toString()?.contains(target, ignoreCase = true) == true ||
+                it.contentDescription?.toString()?.contains(target, ignoreCase = true) == true } ?: return false
+            try {
+                val clickable = clickableParent(node) ?: return false
+                try { clickable.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
+                finally { clickable.recycle() }
+            } finally {
+                node.recycle()
+            }
+        } finally {
+            root.recycle()
+        }
     }
 
     fun enterText(targetHint: String, value: String): Boolean {
         val root = rootInActiveWindow ?: return false
-        val node = findNode(root) {
-            it.isEditable && (targetHint.isBlank() ||
-                it.text?.toString()?.contains(targetHint, true) == true ||
-                it.contentDescription?.toString()?.contains(targetHint, true) == true ||
-                it.hintText?.toString()?.contains(targetHint, true) == true)
-        } ?: findNode(root) { it.isEditable } ?: return false
-        node.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
-        return node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
-            putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
-        })
+        return try {
+            val node = findNode(root) {
+                it.isEditable && (targetHint.isBlank() ||
+                    it.text?.toString()?.contains(targetHint, true) == true ||
+                    it.contentDescription?.toString()?.contains(targetHint, true) == true ||
+                    it.hintText?.toString()?.contains(targetHint, true) == true)
+            } ?: findNode(root) { it.isEditable } ?: return false
+            try {
+                node.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+                node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
+                    putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
+                })
+            } finally {
+                node.recycle()
+            }
+        } finally {
+            root.recycle()
+        }
     }
 
-    fun scrollDown(): Boolean = rootInActiveWindow?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) == true
-    fun scrollUp(): Boolean = rootInActiveWindow?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) == true
+    fun scrollDown(): Boolean {
+        val root = rootInActiveWindow ?: return false
+        return try { root.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) } finally { root.recycle() }
+    }
+
+    fun scrollUp(): Boolean {
+        val root = rootInActiveWindow ?: return false
+        return try { root.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) } finally { root.recycle() }
+    }
 
     private fun collectText(node: AccessibilityNodeInfo, output: MutableList<String>) {
         node.text?.toString()?.takeIf { it.isNotBlank() }?.let(output::add)
