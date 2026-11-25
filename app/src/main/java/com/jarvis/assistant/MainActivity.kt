@@ -199,7 +199,7 @@ class MainActivity : ComponentActivity() {
                 "Alarm kurma ekranını açıyorum."
             }
             "hafıza" in q || "hafiza" in q -> "Kişisel hafızanı Merkez ekranındaki Hafıza bölümünden yönetebilirsin."
-            "görev" in q || "gorev" in q -> "Görevlerini Kontrol bölümündeki görev listesinde görebilirsin."
+            "görev" in q || "gorev" in q -> "Görev modülünü sonraki aşamaya bıraktık; şu an etkin değil."
             else -> "Komutunu aldım. Bu işlem için henüz çevrimdışı bir yetenek tanımlı değil."
         }
     }
