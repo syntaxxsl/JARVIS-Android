@@ -14,10 +14,14 @@ class JarvisNotificationListener : NotificationListenerService() {
             ?: extras.getCharSequence("android.bigText")?.toString().orEmpty()
         if (title.isBlank() && text.isBlank()) return
 
+        val replyAction = sbn.notification.actions?.firstOrNull { it.remoteInputs?.isNotEmpty() == true }
+        NotificationReplyBridge.register(sbn.key, replyAction)
         val prefs = getSharedPreferences(STORE, MODE_PRIVATE)
         val current = runCatching { JSONArray(prefs.getString(KEY, "[]")) }.getOrDefault(JSONArray())
         val next = JSONArray()
         next.put(JSONObject().apply {
+            put("key", sbn.key)
+            put("canReply", replyAction != null)
             put("package", sbn.packageName)
             put("title", title.take(180))
             put("text", text.take(1200))
@@ -30,7 +34,9 @@ class JarvisNotificationListener : NotificationListenerService() {
         prefs.edit().putString(KEY, next.toString()).apply()
     }
 
-    override fun onNotificationRemoved(sbn: StatusBarNotification) = Unit
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        NotificationReplyBridge.remove(sbn.key)
+    }
 
     companion object {
         const val STORE = "jarvis_notification_store"
