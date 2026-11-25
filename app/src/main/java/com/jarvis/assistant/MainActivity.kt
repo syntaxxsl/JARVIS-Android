@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var ttsMgr: TtsManager
     private val history = mutableListOf<Pair<String, String>>()
     private var activeResponseJob: Job? = null
+    private var pendingTorchPermission = false
     private val prefs by lazy {
         val masterKey = MasterKey.Builder(this).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
         EncryptedSharedPreferences.create(
@@ -121,8 +122,13 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onPhoneAction = { action ->
-                        val result = PhoneActions.run(this, action)
-                        Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
+                        if (action == "torch" && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                            pendingTorchPermission = true
+                            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
+                        } else {
+                            val result = PhoneActions.run(this, action)
+                            Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
+                        }
                     },
                     onSpeak = { text -> ttsMgr.speak(text) },
                     onStopSpeaking = { stopAllActivity() }
@@ -130,6 +136,18 @@ class MainActivity : ComponentActivity() {
             }
         }
         requestMicrophonePermissionIfNeeded()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CAMERA_PERMISSION && pendingTorchPermission) {
+            pendingTorchPermission = false
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, PhoneActions.run(this, "torch"), Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "El feneri için kamera izni verilmedi.", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun requestMicrophonePermissionIfNeeded() {
@@ -261,6 +279,7 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val REQUEST_AUDIO_PERMISSION = 101
+        private const val REQUEST_CAMERA_PERMISSION = 102
         private const val DEFAULT_CONVERSATION = "default"
     }
 }
