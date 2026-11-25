@@ -167,7 +167,7 @@ fun DashboardScreen(
                                 item {
                                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                         MiniModule("TELEFON", Icons.Default.PhonelinkSetup, Modifier.weight(1f)) { page = "phone" }
-                                        MiniModule("HAFIZA", Icons.Default.Bookmarks, Modifier.weight(1f)) { page = "memory" }
+                                        MiniModule("BİLDİRİMLER", Icons.Default.Notifications, Modifier.weight(1f)) { page = "notifications" }
                                     }
                                 }
                                 item {
@@ -238,6 +238,40 @@ fun DashboardScreen(
                                         else -> "Yaratıcı ajan olarak fikirler üret: "
                                     }
                                     page = "chat"
+                                }
+                            }
+                        }
+                        "notifications" -> {
+                            val context = LocalContext.current
+                            var notificationRows by remember { mutableStateOf(readJarvisNotifications(context)) }
+                            val accessEnabled = android.provider.Settings.Secure.getString(
+                                context.contentResolver, "enabled_notification_listeners"
+                            )?.contains(context.packageName) == true
+                            LaunchedEffect(Unit) {
+                                while (true) {
+                                    notificationRows = readJarvisNotifications(context)
+                                    kotlinx.coroutines.delay(2500)
+                                }
+                            }
+                            LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                item { SectionHeading("BİLDİRİM MERKEZİ", "İzin verdiğin uygulamalardan gelenler") }
+                                item {
+                                    HudCard {
+                                        StatusLine("Bildirim erişimi", if (accessEnabled) "ETKİN" else "İZİN BEKLİYOR", accessEnabled)
+                                        Text("JARVIS yalnızca Android ayarlarından özel erişim verdiğinde bildirim başlığı ve metnini okuyabilir. Kayıtlar cihazında tutulur.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                        Button(onClick = {
+                                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                                        }, modifier = Modifier.fillMaxWidth()) {
+                                            Icon(Icons.Default.Security, null); Spacer(Modifier.width(8.dp)); Text(if (accessEnabled) "Bildirim erişim ayarları" else "Bildirim erişimini aç")
+                                        }
+                                    }
+                                }
+                                if (notificationRows.isEmpty()) item { EmptyState("Henüz bildirim yok", "İzin verdikten sonra desteklenen bildirimler burada görünür.") }
+                                items(notificationRows) { row ->
+                                    HudCard {
+                                        Text(row.first, color = JarvisCyan, fontWeight = FontWeight.Bold)
+                                        Text(row.second, color = JarvisText)
+                                    }
                                 }
                             }
                         }
@@ -510,4 +544,19 @@ private fun formatBytes(bytes: Long): String {
     val gb = bytes / (1024.0 * 1024.0 * 1024.0)
     return if (gb >= 1.0) String.format(java.util.Locale.getDefault(), "%.1f GB", gb)
     else String.format(java.util.Locale.getDefault(), "%.0f MB", bytes / (1024.0 * 1024.0))
+}
+
+
+private fun readJarvisNotifications(context: Context): List<Pair<String, String>> {
+    val raw = context.getSharedPreferences("jarvis_notification_store", Context.MODE_PRIVATE)
+        .getString("recent_notifications", "[]") ?: "[]"
+    return runCatching {
+        val array = org.json.JSONArray(raw)
+        (0 until array.length()).mapNotNull { index ->
+            val item = array.optJSONObject(index) ?: return@mapNotNull null
+            val title = item.optString("title").ifBlank { item.optString("package") }
+            val body = item.optString("text")
+            (title to body).takeIf { title.isNotBlank() || body.isNotBlank() }
+        }
+    }.getOrDefault(emptyList())
 }
