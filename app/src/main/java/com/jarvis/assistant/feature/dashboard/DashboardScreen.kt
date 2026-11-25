@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
@@ -213,7 +214,7 @@ fun DashboardScreen(
                         "chat" -> Column(Modifier.fillMaxSize().padding(horizontal = 15.dp)) {
                             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("JARVIS İLETİŞİM KANALI", color = JarvisText, fontWeight = FontWeight.Bold)
+                                    Text("STARK NEURAL LINK", color = Color(0xFFFFC46B), fontWeight = FontWeight.Bold)
                                     Text("API yoksa temel yerel komutlar", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
                                 }
                                 IconButton(onClick = onStopSpeaking) { Icon(Icons.Default.StopCircle, "Sesi durdur", tint = JarvisCyan) }
@@ -437,6 +438,9 @@ fun DashboardScreen(
                                     MiniModule("PARLAKLIK +", Icons.Default.BrightnessHigh, Modifier.weight(1f)) { onPhoneAction("brightness_up") }
                                     MiniModule("PARLAKLIK −", Icons.Default.BrightnessLow, Modifier.weight(1f)) { onPhoneAction("brightness_down") }
                                 }
+                            }
+                            item {
+                                MiniModule("EL FENERİ", Icons.Default.FlashlightOn, Modifier.fillMaxWidth()) { onPhoneAction("torch") }
                             }
                             item {
                                 Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
