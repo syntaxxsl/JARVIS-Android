@@ -16,9 +16,38 @@ object JarvisAiClient {
         .readTimeout(90, TimeUnit.SECONDS)
         .build()
 
+    suspend fun chatWithFallback(
+        primaryKey: String,
+        primaryModel: String,
+        primaryUrl: String,
+        backupKey: String,
+        backupModel: String,
+        backupUrl: String,
+        messages: List<Pair<String, String>>
+    ): String {
+        var primaryError: Exception? = null
+        if (primaryKey.isNotBlank()) {
+            try {
+                return chat(primaryKey, primaryModel, messages, primaryUrl)
+            } catch (e: Exception) {
+                primaryError = e
+            }
+        }
+        if (backupKey.isNotBlank()) {
+            try {
+                val response = chat(backupKey, backupModel, messages, backupUrl)
+                return "Yedek AI sağlayıcısına otomatik geçiş yapıldı.\n\n$response"
+            } catch (backupError: Exception) {
+                val first = primaryError?.message ?: "Birincil sağlayıcı anahtarı ayarlanmamış."
+                throw IllegalStateException("Birincil sağlayıcı: $first\nYedek sağlayıcı: \${backupError.message ?: "bağlantı hatası"}")
+            }
+        }
+        throw IllegalStateException(primaryError?.message ?: "AI sağlayıcısı yapılandırılmamış. Yerel komutlar kullanılabilir.")
+    }
+
     suspend fun chat(apiKey: String, model: String, messages: List<Pair<String, String>>, baseUrl: String): String =
         withContext(Dispatchers.IO) {
-            require(apiKey.isNotBlank()) { "Önce Ayarlar bölümünden API anahtarını kaydet." }
+            require(apiKey.isNotBlank()) { "Önce Kontrol bölümünden API anahtarı kaydet." }
             val normalized = baseUrl.trim().trimEnd('/')
             require(normalized.startsWith("https://")) { "API adresi https:// ile başlamalı." }
             val array = JSONArray()
@@ -42,7 +71,7 @@ object JarvisAiClient {
                 val body = response.body?.string().orEmpty()
                 if (!response.isSuccessful) {
                     val detail = runCatching { JSONObject(body).optJSONObject("error")?.optString("message") }.getOrNull()
-                    throw IllegalStateException(detail?.takeIf { it.isNotBlank() } ?: "AI servisi hata verdi (HTTP ${response.code}).")
+                    throw IllegalStateException(detail?.takeIf { it.isNotBlank() } ?: "AI servisi hata verdi (HTTP \${response.code}).")
                 }
                 val text = JSONObject(body).optJSONArray("choices")
                     ?.optJSONObject(0)?.optJSONObject("message")?.optString("content")
