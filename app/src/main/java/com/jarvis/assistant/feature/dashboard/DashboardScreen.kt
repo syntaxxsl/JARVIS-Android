@@ -56,6 +56,7 @@ fun DashboardScreen(
     onNewChat: () -> Unit,
     onApproveNotificationReply: (String, String) -> Boolean,
     onAddMemory: (String) -> Unit, onAddTask: (String) -> Unit,
+    onDeleteMemory: (String) -> Unit, onUpdateMemory: (String, String) -> Unit,
     onMicPress: () -> Unit,
     onSendPress: (String, (String) -> Unit) -> Unit,
     onSaveSettings: (String, String, String, String, String, String) -> Unit,
@@ -376,7 +377,20 @@ fun DashboardScreen(
                                 Icon(Icons.Default.Add, null); Text("Hafızaya ekle")
                             } }
                             if (memoryItems.isEmpty()) item { EmptyState("Henüz kayıt yok", "Önemli notlarını buraya ekleyebilirsin.") }
-                            items(memoryItems) { Text("•  $it", color = JarvisText, modifier = Modifier.fillMaxWidth().background(JarvisPanel, RoundedCornerShape(12.dp)).padding(13.dp)) }
+                            items(memoryItems) { saved ->
+                                var edited by remember(saved) { mutableStateOf(saved) }
+                                HudCard {
+                                    OutlinedTextField(edited, { edited = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Hafıza kaydı") })
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Button(onClick = { if (edited.isNotBlank()) onUpdateMemory(saved, edited.trim()) }, modifier = Modifier.weight(1f)) {
+                                            Icon(Icons.Default.Save, null); Text("Kaydet")
+                                        }
+                                        OutlinedButton(onClick = { onDeleteMemory(saved) }, modifier = Modifier.weight(1f)) {
+                                            Icon(Icons.Default.Delete, null); Text("Sil")
+                                        }
+                                    }
+                                }
+                            }
                         }
                         else -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             item { SectionHeading("JARVIS CONTROL", "AI yönlendirici ve sistem yönetimi") }
