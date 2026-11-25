@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.jarvis.assistant.core.documents.DocumentAnalyzer
+import com.jarvis.assistant.core.phone.PhoneActionHistory
 import kotlinx.coroutines.launch
 
 import androidx.compose.animation.AnimatedContent
@@ -409,6 +410,7 @@ fun DashboardScreen(
                                 }
                             }
                             item { LiveDeviceStatusCard() }
+                            item { PhoneActionHistoryPanel() }
                             item { SectionHeading("HIZLI SİSTEM ERİŞİMİ", "Android kontrol panelleri") }
                             item {
                                 Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -736,6 +738,38 @@ private fun LiveDeviceStatusCard() {
             style = MaterialTheme.typography.labelSmall
         )
         Text("Veriler bu cihazdan 5 saniyede bir okunur.", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+@Composable
+private fun PhoneActionHistoryPanel() {
+    val context = LocalContext.current
+    var entries by remember { mutableStateOf(PhoneActionHistory.read(context)) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            entries = PhoneActionHistory.read(context)
+            kotlinx.coroutines.delay(2500)
+        }
+    }
+    HudCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.History, null, tint = JarvisCyan)
+            Spacer(Modifier.width(9.dp))
+            Text("SON SİSTEM İŞLEMLERİ", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            TextButton(onClick = {
+                PhoneActionHistory.clear(context)
+                entries = emptyList()
+            }) { Text("Temizle", color = JarvisTextDim) }
+        }
+        if (entries.isEmpty()) {
+            Text("Henüz kayıtlı sistem işlemi yok.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+        } else {
+            entries.take(5).forEachIndexed { index, entry ->
+                if (index > 0) Divider(color = JarvisCyan.copy(alpha = .12f))
+                Text(entry, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        Text("Kayıtlar bu cihazda tutulur; en fazla 30 işlem saklanır.", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
     }
 }
 
