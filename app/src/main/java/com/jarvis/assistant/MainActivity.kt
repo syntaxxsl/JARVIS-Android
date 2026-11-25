@@ -95,6 +95,8 @@ class MainActivity : ComponentActivity() {
                         sent
                     },
                     onAddMemory = { value -> lifecycleScope.launch { database.memoryDao().insert(MemoryEntity(content = value)) } },
+                    onDeleteMemory = { value -> lifecycleScope.launch { database.memoryDao().deleteByContent(value) } },
+                    onUpdateMemory = { old, updated -> lifecycleScope.launch { database.memoryDao().updateContent(old, updated) } },
                     onAddTask = { value -> lifecycleScope.launch { database.taskDao().insert(TaskEntity(title = value)) } },
                     onMicPress = { startSpeech() },
                     onSendPress = { message, onReply -> sendMessage(message, onReply) },
