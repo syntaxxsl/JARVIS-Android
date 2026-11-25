@@ -829,6 +829,6 @@ private fun readJarvisNotifications(context: Context): List<NotificationItem> {
                 text = body,
                 canReply = item.optBoolean("canReply")
             ).takeIf { it.key.isNotBlank() && (title.isNotBlank() || body.isNotBlank()) }
-        }
+        }.distinctBy { it.key }
     }.getOrDefault(emptyList())
 }
