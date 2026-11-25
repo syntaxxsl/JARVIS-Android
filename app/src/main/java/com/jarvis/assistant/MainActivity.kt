@@ -150,6 +150,18 @@ class MainActivity : ComponentActivity() {
     private fun sendMessage(message: String, onReply: (String) -> Unit) {
         val clean = message.trim()
         if (clean.isBlank()) return
+        val phoneAction = detectPhoneAction(clean)
+        if (phoneAction != null) {
+            val reply = PhoneActions.run(this, phoneAction)
+            lifecycleScope.launch {
+                database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "user", content = clean))
+                database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "assistant", content = reply))
+            }
+            history.add("user" to clean)
+            history.add("assistant" to reply)
+            onReply(reply)
+            return
+        }
         val asksToOpenApp = listOf(" aç", " ac", " başlat", " çalıştır").any { clean.lowercase().contains(it) }
         if (asksToOpenApp) {
             val match = AppLauncher.installedLaunchableApps(this)
@@ -200,6 +212,28 @@ class MainActivity : ComponentActivity() {
         activeResponseJob?.cancel()
         activeResponseJob = null
         Toast.makeText(this, "JARVIS işlemi durduruldu.", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun detectPhoneAction(command: String): String? {
+        val q = command.lowercase(java.util.Locale("tr", "TR"))
+        return when {
+            listOf("sesi aç", "ses aç", "ses yükselt", "sesi yükselt", "volume up").any(q::contains) -> "volume_up"
+            listOf("sesi kıs", "ses kıs", "ses azalt", "volume down").any(q::contains) -> "volume_down"
+            listOf("sessize al", "sesi kapat", "mute").any(q::contains) -> "volume_mute"
+            listOf("parlaklığı artır", "parlaklığı yükselt", "ekranı aydınlat").any(q::contains) -> "brightness_up"
+            listOf("parlaklığı azalt", "ekranı karart").any(q::contains) -> "brightness_down"
+            "rahatsız etme" in q -> "dnd"
+            "wi-fi" in q || "wifi" in q -> "wifi"
+            "bluetooth" in q -> "bluetooth"
+            "konum ayar" in q -> "location"
+            "pil tasarruf" in q || "pil ayar" in q -> "battery"
+            "ekran ayar" in q -> "display"
+            "ses ayar" in q -> "sound"
+            "uygulama ayar" in q -> "apps"
+            "bildirim ayar" in q -> "notifications"
+            "telefon ayar" in q || q == "ayarları aç" || q == "ayarlar" -> "settings"
+            else -> null
+        }
     }
 
     private fun offlineReply(command: String): String {
