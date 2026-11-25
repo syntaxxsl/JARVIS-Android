@@ -146,7 +146,7 @@ class MainActivity : ComponentActivity() {
     private fun sendMessage(message: String, onReply: (String) -> Unit) {
         val clean = message.trim()
         if (clean.isBlank()) return
-        val currentHistory = history.toList().filterNot { it.first == "user" && it.second == clean }.takeLast(19) + ("user" to clean)
+        val currentHistory = history.toList().let { existing -> if (existing.lastOrNull() == ("user" to clean)) existing else existing + ("user" to clean) }.takeLast(20)
         lifecycleScope.launch {
             database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "user", content = clean))
             val reply = try {
