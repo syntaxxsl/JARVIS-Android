@@ -1,5 +1,10 @@
 package com.jarvis.assistant.feature.dashboard
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -33,11 +38,12 @@ private data class ChatLine(val role: String, val text: String)
 @Composable
 fun DashboardScreen(
     initialApiKey: String, initialModel: String, initialBaseUrl: String,
+    initialBackupApiKey: String, initialBackupModel: String, initialBackupBaseUrl: String,
     memoryItems: List<String>, taskItems: List<String>,
     onAddMemory: (String) -> Unit, onAddTask: (String) -> Unit,
     onMicPress: () -> Unit,
     onSendPress: (String, (String) -> Unit) -> Unit,
-    onSaveSettings: (String, String, String) -> Unit,
+    onSaveSettings: (String, String, String, String, String, String) -> Unit,
     onPhoneAction: (String) -> Unit,
     onSpeak: (String) -> Unit,
     onStopSpeaking: () -> Unit
@@ -47,9 +53,12 @@ fun DashboardScreen(
     var apiKey by rememberSaveable { mutableStateOf(initialApiKey) }
     var model by rememberSaveable { mutableStateOf(initialModel) }
     var baseUrl by rememberSaveable { mutableStateOf(initialBaseUrl) }
+    var backupKey by rememberSaveable { mutableStateOf(initialBackupApiKey) }
+    var backupModel by rememberSaveable { mutableStateOf(initialBackupModel) }
+    var backupUrl by rememberSaveable { mutableStateOf(initialBackupBaseUrl) }
     var memoryText by rememberSaveable { mutableStateOf("") }
     var taskText by rememberSaveable { mutableStateOf("") }
-    val chat = remember { mutableStateListOf(ChatLine("assistant", "Merhaba. Ben JARVIS. Sistemlerin hazır. Nasıl yardımcı olabilirim?")) }
+    val chat = remember { mutableStateListOf(ChatLine("assistant", "Merhaba. Ben JARVIS. Yerel sistemler hazır. Nasıl yardımcı olabilirim?")) }
     val agents = listOf(
         "Araştırma" to "Bilgi topla, karşılaştır ve özetle",
         "Yazılım Geliştirici" to "Kod yaz, hata ayıkla ve mimari tasarla",
@@ -61,159 +70,228 @@ fun DashboardScreen(
     Scaffold(
         containerColor = JarvisBgDeep,
         bottomBar = {
-            NavigationBar(containerColor = JarvisPanel) {
+            NavigationBar(containerColor = JarvisPanel, tonalElevation = 0.dp) {
                 val tabs = listOf(
                     Triple("home", "Merkez", Icons.Default.Dashboard),
                     Triple("chat", "Sohbet", Icons.Default.Chat),
                     Triple("agents", "Ajanlar", Icons.Default.Hub),
                     Triple("phone", "Telefon", Icons.Default.Smartphone),
-                    Triple("more", "Sistem", Icons.Default.Tune)
+                    Triple("control", "Kontrol", Icons.Default.Tune)
                 )
                 tabs.forEach { (id, label, icon) ->
                     NavigationBarItem(
-                        selected = page == id || (id == "more" && page == "memory"),
-                        onClick = { page = id }, icon = { Icon(icon, label) }, label = { Text(label) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = JarvisCyan, selectedTextColor = JarvisCyan, indicatorColor = JarvisAccent.copy(alpha = .18f), unselectedIconColor = JarvisTextDim, unselectedTextColor = JarvisTextDim)
+                        selected = page == id || (id == "memory" && page == "control"),
+                        onClick = { page = id },
+                        icon = { Icon(icon, label) },
+                        label = { Text(label) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = JarvisCyan, selectedTextColor = JarvisCyan,
+                            indicatorColor = JarvisCyan.copy(alpha = .14f),
+                            unselectedIconColor = JarvisTextDim, unselectedTextColor = JarvisTextDim
+                        )
                     )
                 }
             }
         }
     ) { padding ->
-        Column(
-            Modifier.fillMaxSize().padding(padding)
-                .background(Brush.verticalGradient(listOf(JarvisBgDeep, JarvisBg, JarvisPanel)))
-        ) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(42.dp).clip(CircleShape).background(JarvisCyan.copy(alpha = .13f)).border(1.dp, JarvisCyan.copy(alpha = .5f), CircleShape), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Memory, null, tint = JarvisCyan)
+        Box(Modifier.fillMaxSize().padding(padding).background(JarvisBgDeep)) {
+            HudBackdrop()
+            Column(Modifier.fillMaxSize()) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.size(42.dp).clip(CircleShape).background(JarvisCyan.copy(alpha = .12f))
+                        .border(1.dp, JarvisCyan.copy(alpha = .55f), CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Memory, null, tint = JarvisCyan)
+                    }
+                    Spacer(Modifier.width(11.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("J.A.R.V.I.S.", color = JarvisText, fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleLarge)
+                        Text("PERSONAL INTELLIGENCE SYSTEM", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("● LOCAL CORE", color = JarvisSuccess, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("v1.1 • READY", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                    }
                 }
-                Spacer(Modifier.width(11.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("J.A.R.V.I.S.", color = JarvisText, fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleLarge)
-                    Text("PERSONAL INTELLIGENCE SYSTEM", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
-                }
-                Surface(color = JarvisSuccess.copy(alpha = .12f), shape = CircleShape, border = androidx.compose.foundation.BorderStroke(1.dp, JarvisSuccess.copy(alpha = .35f))) {
-                    Text("● ONLINE", color = JarvisSuccess, modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp), style = MaterialTheme.typography.labelSmall)
-                }
-            }
-            when (page) {
-                "home" -> {
-                    val transition = rememberInfiniteTransition(label = "core")
-                    val pulse by transition.animateFloat(.72f, 1f, infiniteRepeatable(tween(1600), RepeatMode.Reverse), label = "pulse")
-                    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
-                        item {
-                            Text("SİSTEME HOŞ GELDİN", color = JarvisCyan, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                            Text("İyi günler. Nasıl yardımcı olabilirim?", color = JarvisText, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-                            Text(TimeUtils.nowFormatted(), color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
-                        }
-                        item {
-                            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = JarvisPanel)) {
-                                Box(Modifier.fillMaxWidth().background(Brush.radialGradient(listOf(JarvisAccent.copy(alpha = .2f), JarvisPanel, JarvisBgDeep))).padding(vertical = 20.dp), contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Canvas(Modifier.size(180.dp)) {
-                                            val r = size.minDimension * .42f
-                                            drawCircle(JarvisCyan.copy(alpha = .08f * pulse), r * 1.3f)
-                                            drawCircle(JarvisCyan.copy(alpha = .3f), r, style = Stroke(2.dp.toPx()))
-                                            drawCircle(JarvisAccent, r * .78f, style = Stroke(5.dp.toPx()))
-                                            drawArc(JarvisCyan, 210f, 250f, false, style = Stroke(5.dp.toPx(), cap = StrokeCap.Round), topLeft = androidx.compose.ui.geometry.Offset(center.x-r*.78f, center.y-r*.78f), size = androidx.compose.ui.geometry.Size(r*1.56f,r*1.56f))
-                                            drawCircle(JarvisCyan.copy(alpha = .18f * pulse), r * .55f)
-                                            drawCircle(Brush.radialGradient(listOf(JarvisCyan, JarvisAccent, JarvisBgDeep), radius = r*.5f), r*.4f)
+                AnimatedContent(
+                    targetState = page,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    transitionSpec = { (fadeIn(tween(260)) + slideInVertically { it / 18 }) togetherWith fadeOut(tween(160)) },
+                    label = "page-transition"
+                ) { target ->
+                    when (target) {
+                        "home" -> {
+                            LazyColumn(
+                                Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 17.dp, end = 17.dp, top = 10.dp, bottom = 26.dp),
+                                verticalArrangement = Arrangement.spacedBy(15.dp)
+                            ) {
+                                item {
+                                    Text("SİSTEME HOŞ GELDİN", color = JarvisCyan, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    Text("Merkez kontrol", color = JarvisText, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                                    Text(TimeUtils.nowFormatted() + "  •  Çevrimdışı temel modül aktif", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                }
+                                item { ReactorPanel(onMicPress) }
+                                item {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                        StatCard("HAFIZA", memoryItems.size.toString(), Icons.Default.Psychology, Modifier.weight(1f)) { page = "memory" }
+                                        StatCard("GÖREV", taskItems.size.toString(), Icons.Default.TaskAlt, Modifier.weight(1f)) { page = "control" }
+                                        StatCard("AJAN", "06", Icons.Default.Hub, Modifier.weight(1f)) { page = "agents" }
+                                    }
+                                }
+                                item { SectionHeading("SİSTEM MODÜLLERİ", "Hızlı erişim") }
+                                item {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        MiniModule("AI SOHBET", Icons.Default.Forum, Modifier.weight(1f)) { page = "chat" }
+                                        MiniModule("AI ROUTER", Icons.Default.AccountTree, Modifier.weight(1f)) { page = "control" }
+                                    }
+                                }
+                                item {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        MiniModule("TELEFON", Icons.Default.PhonelinkSetup, Modifier.weight(1f)) { page = "phone" }
+                                        MiniModule("HAFIZA", Icons.Default.Bookmarks, Modifier.weight(1f)) { page = "memory" }
+                                    }
+                                }
+                                item {
+                                    HudCard {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Timeline, null, tint = JarvisCyan)
+                                            Spacer(Modifier.width(9.dp))
+                                            Text("SİSTEM AKIŞI", color = JarvisText, fontWeight = FontWeight.Bold)
                                         }
-                                        Text("JARVIS CORE", color = JarvisCyan, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                        Text("SES KOMUTU BEKLENİYOR", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
-                                        Spacer(Modifier.height(12.dp))
-                                        Button(onClick = onMicPress, colors = ButtonDefaults.buttonColors(containerColor = JarvisCyan, contentColor = JarvisBgDeep), shape = CircleShape) {
-                                            Icon(Icons.Default.Mic, null); Spacer(Modifier.width(8.dp)); Text("JARVIS İLE KONUŞ")
-                                        }
+                                        Spacer(Modifier.height(10.dp))
+                                        StatusLine("Yerel komut motoru", "HAZIR", true)
+                                        StatusLine("Yerel hafıza veritabanı", "BAĞLI", true)
+                                        StatusLine("Birincil AI sağlayıcısı", if (apiKey.isBlank()) "ANAHTAR BEKLİYOR" else "AYARLANDI", apiKey.isNotBlank())
+                                        StatusLine("Yedek AI sağlayıcısı", if (backupKey.isBlank()) "AYARLANMADI" else "AYARLANDI", backupKey.isNotBlank())
                                     }
                                 }
                             }
                         }
-                        item {
-                            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                                StatCard("HAFIZA", memoryItems.size.toString(), Icons.Default.Psychology, Modifier.weight(1f)) { page = "memory" }
-                                StatCard("GÖREV", taskItems.size.toString(), Icons.Default.TaskAlt, Modifier.weight(1f)) { page = "more" }
-                                StatCard("AJAN", "06", Icons.Default.Hub, Modifier.weight(1f)) { page = "agents" }
+                        "chat" -> Column(Modifier.fillMaxSize().padding(horizontal = 15.dp)) {
+                            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("JARVIS İLETİŞİM KANALI", color = JarvisText, fontWeight = FontWeight.Bold)
+                                    Text("API yoksa temel yerel komutlar", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                                }
+                                IconButton(onClick = onStopSpeaking) { Icon(Icons.Default.StopCircle, "Sesi durdur", tint = JarvisCyan) }
+                                TextButton(onClick = { chat.clear(); chat.add(ChatLine("assistant", "Yeni sohbet başlatıldı.")) }) { Text("Yeni") }
                             }
-                        }
-                        item { Text("HIZLI ERİŞİM", color = JarvisText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
-                        item { QuickCard("Yapay zekâ sohbeti", "JARVIS ile yazılı iletişim", Icons.Default.Forum) { page = "chat" } }
-                        item { QuickCard("Telefon kontrol merkezi", "Cihaz ayarları ve araçlar", Icons.Default.PhonelinkSetup) { page = "phone" } }
-                        item { QuickCard("Kişisel hafıza", "Notlarını ve hatırlatmalarını yönet", Icons.Default.Bookmarks) { page = "memory" } }
-                    }
-                }
-                "chat" -> Column(Modifier.fillMaxSize().padding(horizontal = 15.dp)) {
-                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) { Text("ASİSTAN BAĞLANTISI", color = JarvisText, fontWeight = FontWeight.Bold); Text("Çevrimiçi AI • Türkçe ses", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall) }
-                        IconButton(onClick = onStopSpeaking) { Icon(Icons.Default.StopCircle, "Sesi durdur", tint = JarvisCyan) }
-                        TextButton(onClick = { chat.clear(); chat.add(ChatLine("assistant", "Yeni sohbet başlatıldı.")) }) { Text("Yeni") }
-                    }
-                    LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
-                        items(chat) { line ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = if (line.role == "user") Arrangement.End else Arrangement.Start) {
-                                Card(Modifier.fillMaxWidth(.91f), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = if (line.role == "user") JarvisAccent.copy(alpha = .22f) else JarvisPanel)) {
-                                    Column(Modifier.padding(14.dp)) {
-                                        Text(if (line.role == "user") "SEN" else "J.A.R.V.I.S.", color = JarvisCyan, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                                        Spacer(Modifier.height(5.dp)); Text(line.text, color = JarvisText)
-                                        if (line.role == "assistant") TextButton(onClick = { onSpeak(line.text) }) { Icon(Icons.Default.VolumeUp, null); Text("Seslendir") }
+                            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
+                                items(chat) { line ->
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (line.role == "user") Arrangement.End else Arrangement.Start) {
+                                        Card(Modifier.fillMaxWidth(.91f), shape = RoundedCornerShape(18.dp),
+                                            colors = CardDefaults.cardColors(containerColor = if (line.role == "user") JarvisAccent.copy(alpha = .22f) else JarvisPanel)) {
+                                            Column(Modifier.padding(14.dp)) {
+                                                Text(if (line.role == "user") "SEN" else "J.A.R.V.I.S.", color = JarvisCyan, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                                Spacer(Modifier.height(5.dp))
+                                                Text(line.text, color = JarvisText)
+                                                if (line.role == "assistant") TextButton(onClick = { onSpeak(line.text) }) {
+                                                    Icon(Icons.Default.VolumeUp, null); Text("Seslendir")
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
-                        }
-                    }
-                    Row(Modifier.padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(message, { message = it }, Modifier.weight(1f), placeholder = { Text("Komutunu yaz...") }, shape = RoundedCornerShape(18.dp), maxLines = 4)
-                        IconButton(onClick = onMicPress) { Icon(Icons.Default.Mic, "Ses", tint = JarvisCyan) }
-                        IconButton(onClick = {
-                            val q = message.trim()
-                            if (q.isNotEmpty()) { chat.add(ChatLine("user", q)); message = ""; onSendPress(q) { chat.add(ChatLine("assistant", it)) } }
-                        }) { Icon(Icons.Default.Send, "Gönder", tint = JarvisCyan) }
-                    }
-                }
-                "agents" -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                    item { Text("UZMAN AJANLAR", color = JarvisCyan, style = MaterialTheme.typography.labelMedium); Text("Her görev için doğru uzman.", color = JarvisText, style = MaterialTheme.typography.headlineSmall) }
-                    items(agents) { (name, detail) ->
-                        QuickCard(name, detail, Icons.Default.AutoAwesome) {
-                            message = when(name) {
-                                "Araştırma" -> "Araştırma ajanı olarak konuyu kaynaklarıyla analiz et: "
-                                "Yazılım Geliştirici" -> "Yazılım geliştirici olarak kodu ve testleri hazırla: "
-                                "Planlayıcı" -> "Planlayıcı olarak hedefimi adımlara böl: "
-                                "Telefon Asistanı" -> "Telefon asistanı olarak izinli Android görevini planla: "
-                                "Öğrenme Koçu" -> "Öğrenme koçu olarak konuyu basitçe öğret: "
-                                else -> "Yaratıcı ajan olarak fikirler üret: "
+                            Row(Modifier.padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(message, { message = it }, Modifier.weight(1f),
+                                    placeholder = { Text("Komutunu yaz...") }, shape = RoundedCornerShape(18.dp), maxLines = 4)
+                                IconButton(onClick = onMicPress) { Icon(Icons.Default.Mic, "Ses", tint = JarvisCyan) }
+                                IconButton(onClick = {
+                                    val q = message.trim()
+                                    if (q.isNotEmpty()) {
+                                        chat.add(ChatLine("user", q)); message = ""
+                                        onSendPress(q) { chat.add(ChatLine("assistant", it)) }
+                                    }
+                                }) { Icon(Icons.Default.Send, "Gönder", tint = JarvisCyan) }
                             }
-                            page = "chat"
+                        }
+                        "agents" -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                            item { SectionHeading("UZMAN AJANLAR", "Her görev için doğru uzman") }
+                            items(agents) { (name, detail) ->
+                                QuickCard(name, detail, Icons.Default.AutoAwesome) {
+                                    message = when (name) {
+                                        "Araştırma" -> "Araştırma ajanı olarak konuyu kaynaklarıyla analiz et: "
+                                        "Yazılım Geliştirici" -> "Yazılım geliştirici olarak kodu ve testleri hazırla: "
+                                        "Planlayıcı" -> "Planlayıcı olarak hedefimi adımlara böl: "
+                                        "Telefon Asistanı" -> "Telefon asistanı olarak izinli Android görevini planla: "
+                                        "Öğrenme Koçu" -> "Öğrenme koçu olarak konuyu basitçe öğret: "
+                                        else -> "Yaratıcı ajan olarak fikirler üret: "
+                                    }
+                                    page = "chat"
+                                }
+                            }
+                        }
+                        "phone" -> {
+                            val actions = listOf(
+                                "alarm" to "Alarm kur", "wifi" to "Wi-Fi ayarları", "bluetooth" to "Bluetooth",
+                                "sound" to "Ses ayarları", "display" to "Ekran ayarları", "battery" to "Pil tasarrufu",
+                                "apps" to "Uygulama ayarları", "settings" to "Tüm ayarlar"
+                            )
+                            LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                item { SectionHeading("TELEFON KONTROLÜ", "Android ile güvenli bağlantı") }
+                                item {
+                                    HudCard {
+                                        Text("CİHAZ ARAÇLARI", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                                        Text("Android izinleri nedeniyle bazı işlemler sistem ekranında onayınla tamamlanır.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                                items(actions) { (id, label) -> QuickCard(label, "Android sistem aracını aç", Icons.Default.Tune) { onPhoneAction(id) } }
+                            }
+                        }
+                        "memory" -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            item { SectionHeading("KİŞİSEL HAFIZA", "JARVIS'in yerel not defteri") }
+                            item { OutlinedTextField(memoryText, { memoryText = it }, Modifier.fillMaxWidth(), label = { Text("Hatırlanacak not") }) }
+                            item { Button(onClick = { if (memoryText.isNotBlank()) { onAddMemory(memoryText.trim()); memoryText = "" } }, Modifier.fillMaxWidth()) {
+                                Icon(Icons.Default.Add, null); Text("Hafızaya ekle")
+                            } }
+                            if (memoryItems.isEmpty()) item { EmptyState("Henüz kayıt yok", "Önemli notlarını buraya ekleyebilirsin.") }
+                            items(memoryItems) { Text("•  $it", color = JarvisText, modifier = Modifier.fillMaxWidth().background(JarvisPanel, RoundedCornerShape(12.dp)).padding(13.dp)) }
+                        }
+                        else -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            item { SectionHeading("JARVIS CONTROL", "AI yönlendirici ve sistem yönetimi") }
+                            item {
+                                HudCard {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.AccountTree, null, tint = JarvisCyan)
+                                        Spacer(Modifier.width(9.dp))
+                                        Text("ÇOKLU SAĞLAYICI YÖNLENDİRİCİ", color = JarvisText, fontWeight = FontWeight.Bold)
+                                    }
+                                    Text("Birincil servis hata verirse yedek servise geçiş denenir. Her sağlayıcının kendi kotası ve erişim koşulları vardır.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                    StatusLine("Birincil", if (apiKey.isBlank()) "ANAHTAR YOK" else "YAPILANDIRILDI", apiKey.isNotBlank())
+                                    StatusLine("Yedek", if (backupKey.isBlank()) "ANAHTAR YOK" else "YAPILANDIRILDI", backupKey.isNotBlank())
+                                    StatusLine("Çevrimdışı komutlar", "HER ZAMAN", true)
+                                }
+                            }
+                            item { Text("BİRİNCİL SAĞLAYICI", color = JarvisCyan, fontWeight = FontWeight.Bold) }
+                            item { OutlinedTextField(apiKey, { apiKey = it }, Modifier.fillMaxWidth(), label = { Text("Birincil API anahtarı") }, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), singleLine = true) }
+                            item { OutlinedTextField(baseUrl, { baseUrl = it }, Modifier.fillMaxWidth(), label = { Text("Birincil API adresi") }, singleLine = true) }
+                            item { OutlinedTextField(model, { model = it }, Modifier.fillMaxWidth(), label = { Text("Birincil model") }, singleLine = true) }
+                            item { Divider(color = JarvisCyan.copy(alpha = .22f)) }
+                            item { Text("YEDEK SAĞLAYICI", color = JarvisCyan, fontWeight = FontWeight.Bold) }
+                            item { OutlinedTextField(backupKey, { backupKey = it }, Modifier.fillMaxWidth(), label = { Text("Yedek API anahtarı") }, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), singleLine = true) }
+                            item { OutlinedTextField(backupUrl, { backupUrl = it }, Modifier.fillMaxWidth(), label = { Text("Yedek API adresi") }, singleLine = true) }
+                            item { OutlinedTextField(backupModel, { backupModel = it }, Modifier.fillMaxWidth(), label = { Text("Yedek model") }, singleLine = true) }
+                            item {
+                                Button(onClick = { onSaveSettings(apiKey, model, baseUrl, backupKey, backupModel, backupUrl) }, Modifier.fillMaxWidth()) {
+                                    Icon(Icons.Default.Security, null); Spacer(Modifier.width(8.dp)); Text("Tüm AI ayarlarını güvenli kaydet")
+                                }
+                            }
+                            item { Text("Anahtarlar cihazdaki şifreli tercihler alanında saklanır. Kota bilgisi servis sağlayıcıdan gelmediği sürece tahmin edilmez.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall) }
+                            item { Divider(color = JarvisCyan.copy(alpha = .22f)) }
+                            item { Text("GÖREV YÖNETİMİ", color = JarvisCyan, fontWeight = FontWeight.Bold) }
+                            item { OutlinedTextField(taskText, { taskText = it }, Modifier.fillMaxWidth(), label = { Text("Yeni görev") }) }
+                            item { Button(onClick = { if (taskText.isNotBlank()) { onAddTask(taskText.trim()); taskText = "" } }, Modifier.fillMaxWidth()) {
+                                Icon(Icons.Default.AddTask, null); Text("Görev ekle")
+                            } }
+                            if (taskItems.isEmpty()) item { EmptyState("Görev listesi boş", "Yapılacaklarını buradan takip edebilirsin.") }
+                            items(taskItems) { Text("•  $it", color = JarvisText, modifier = Modifier.fillMaxWidth().background(JarvisPanel, RoundedCornerShape(12.dp)).padding(13.dp)) }
+                            item { OutlinedButton(onClick = onStopSpeaking, Modifier.fillMaxWidth()) { Icon(Icons.Default.Stop, null); Text("Sesli yanıtı durdur") } }
                         }
                     }
-                }
-                "phone" -> {
-                    val actions = listOf("alarm" to "Alarm kur", "wifi" to "Wi-Fi ayarları", "bluetooth" to "Bluetooth", "sound" to "Ses ayarları", "display" to "Ekran ayarları", "battery" to "Pil tasarrufu", "apps" to "Uygulama ayarları", "settings" to "Tüm ayarlar")
-                    LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        item { Text("TELEFON KONTROLÜ", color = JarvisCyan, style = MaterialTheme.typography.labelMedium); Text("Cihazınla bağlantı", color = JarvisText, style = MaterialTheme.typography.headlineSmall); Text("Android izinleri nedeniyle bazı işlemler sistem ekranında onayınla tamamlanır.", color = JarvisTextDim) }
-                        items(actions) { (id, label) -> QuickCard(label, "Android sistem aracını aç", Icons.Default.Tune) { onPhoneAction(id) } }
-                    }
-                }
-                "memory" -> Column(Modifier.fillMaxSize().padding(18.dp)) {
-                    Text("KİŞİSEL HAFIZA", color = JarvisCyan, style = MaterialTheme.typography.labelMedium)
-                    Text("JARVIS'in not defteri", color = JarvisText, style = MaterialTheme.typography.headlineSmall)
-                    OutlinedTextField(memoryText, { memoryText = it }, Modifier.fillMaxWidth(), label = { Text("Hatırlanacak not") })
-                    Button(onClick = { if (memoryText.isNotBlank()) { onAddMemory(memoryText.trim()); memoryText = "" } }, Modifier.fillMaxWidth()) { Icon(Icons.Default.Add, null); Text("Hafızaya ekle") }
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(memoryItems) { Text("•  $it", color = JarvisText, modifier = Modifier.fillMaxWidth().background(JarvisPanel, RoundedCornerShape(12.dp)).padding(13.dp)) } }
-                }
-                else -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    item { Text("SİSTEM MERKEZİ", color = JarvisCyan, style = MaterialTheme.typography.labelMedium); Text("Yapılandırma ve araçlar", color = JarvisText, style = MaterialTheme.typography.headlineSmall) }
-                    item { Text("AI SAĞLAYICI", color = JarvisCyan, fontWeight = FontWeight.Bold) }
-                    item { OutlinedTextField(apiKey, { apiKey = it }, Modifier.fillMaxWidth(), label = { Text("API anahtarı") }, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), singleLine = true) }
-                    item { OutlinedTextField(baseUrl, { baseUrl = it }, Modifier.fillMaxWidth(), label = { Text("API adresi") }, singleLine = true) }
-                    item { OutlinedTextField(model, { model = it }, Modifier.fillMaxWidth(), label = { Text("Model adı") }, singleLine = true) }
-                    item { Button(onClick = { onSaveSettings(apiKey, model, baseUrl) }, Modifier.fillMaxWidth()) { Icon(Icons.Default.Security, null); Text("Güvenli kaydet") } }
-                    item { Text("API anahtarı cihazda şifreli tercihler alanında saklanır. Ücretsiz kullanım sağlayıcının kotasına bağlıdır.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall) }
-                    item { Divider(color = JarvisTextDim.copy(alpha = .3f)) }
-                    item { Text("GÖREV LİSTESİ", color = JarvisCyan, fontWeight = FontWeight.Bold) }
-                    item { OutlinedTextField(taskText, { taskText = it }, Modifier.fillMaxWidth(), label = { Text("Yeni görev") }) }
-                    item { Button(onClick = { if (taskText.isNotBlank()) { onAddTask(taskText.trim()); taskText = "" } }, Modifier.fillMaxWidth()) { Icon(Icons.Default.AddTask, null); Text("Görev ekle") } }
-                    items(taskItems) { Text("•  $it", color = JarvisText, modifier = Modifier.fillMaxWidth().background(JarvisPanel, RoundedCornerShape(12.dp)).padding(13.dp)) }
-                    item { OutlinedButton(onClick = onStopSpeaking, Modifier.fillMaxWidth()) { Icon(Icons.Default.Stop, null); Text("Sesli yanıtı durdur") } }
                 }
             }
         }
@@ -221,8 +299,109 @@ fun DashboardScreen(
 }
 
 @Composable
+private fun HudBackdrop() {
+    val transition = rememberInfiniteTransition(label = "hud-background")
+    val scan by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(4200, easing = LinearEasing)), label = "scan")
+    Canvas(Modifier.fillMaxSize()) {
+        val step = 34.dp.toPx()
+        for (x in 0..(size.width / step).toInt()) {
+            drawLine(JarvisCyan.copy(alpha = .035f), androidx.compose.ui.geometry.Offset(x * step, 0f),
+                androidx.compose.ui.geometry.Offset(x * step, size.height), 1f)
+        }
+        for (y in 0..(size.height / step).toInt()) {
+            drawLine(JarvisCyan.copy(alpha = .035f), androidx.compose.ui.geometry.Offset(0f, y * step),
+                androidx.compose.ui.geometry.Offset(size.width, y * step), 1f)
+        }
+        val scanY = size.height * scan
+        drawLine(JarvisCyan.copy(alpha = .12f), androidx.compose.ui.geometry.Offset(0f, scanY),
+            androidx.compose.ui.geometry.Offset(size.width, scanY), 2.dp.toPx())
+    }
+}
+
+@Composable
+private fun ReactorPanel(onMicPress: () -> Unit) {
+    val transition = rememberInfiniteTransition(label = "reactor")
+    val pulse by transition.animateFloat(.82f, 1.06f, infiniteRepeatable(tween(1450), RepeatMode.Reverse), label = "pulse")
+    val rotation by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(12000, easing = LinearEasing)), label = "rotation")
+    HudCard {
+        Box(Modifier.fillMaxWidth().background(Brush.radialGradient(listOf(JarvisAccent.copy(alpha = .20f), JarvisPanel, JarvisBgDeep))).padding(vertical = 14.dp), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Canvas(Modifier.size(226.dp)) {
+                    val r = size.minDimension * .38f
+                    drawCircle(JarvisCyan.copy(alpha = .055f), r * 1.55f * pulse)
+                    drawCircle(JarvisCyan.copy(alpha = .20f), r * 1.28f, style = Stroke(1.dp.toPx()))
+                    drawCircle(JarvisAccent.copy(alpha = .85f), r, style = Stroke(4.dp.toPx()))
+                    drawArc(JarvisCyan, rotation, 105f, false, style = Stroke(5.dp.toPx(), cap = StrokeCap.Round),
+                        topLeft = androidx.compose.ui.geometry.Offset(center.x-r, center.y-r),
+                        size = androidx.compose.ui.geometry.Size(r*2, r*2))
+                    drawArc(JarvisCyan.copy(alpha = .55f), -rotation * .7f, 70f, false,
+                        style = Stroke(2.dp.toPx(), cap = StrokeCap.Round),
+                        topLeft = androidx.compose.ui.geometry.Offset(center.x-r*1.22f, center.y-r*1.22f),
+                        size = androidx.compose.ui.geometry.Size(r*2.44f, r*2.44f))
+                    drawCircle(Brush.radialGradient(listOf(JarvisCyan.copy(alpha = .95f), JarvisAccent, JarvisBgDeep), radius = r*.8f), r*.62f)
+                    drawCircle(JarvisCyan.copy(alpha = .9f), r*.16f)
+                }
+                Text("J.A.R.V.I.S. CORE", color = JarvisCyan, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                Text("YEREL SİSTEM AKTİF  •  AI BAĞLANTISI AYARLANABİLİR", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                Spacer(Modifier.height(14.dp))
+                Button(onClick = onMicPress, colors = ButtonDefaults.buttonColors(containerColor = JarvisCyan, contentColor = JarvisBgDeep), shape = CircleShape) {
+                    Icon(Icons.Default.Mic, null); Spacer(Modifier.width(8.dp)); Text("JARVIS İLE KONUŞ")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HudCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(Modifier.fillMaxWidth().border(1.dp, JarvisCyan.copy(alpha = .20f), RoundedCornerShape(22.dp)),
+        shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = JarvisPanel.copy(alpha = .94f))) {
+        Column(Modifier.padding(15.dp), content = content)
+    }
+}
+
+@Composable
+private fun SectionHeading(kicker: String, title: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(kicker, color = JarvisCyan, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        Text(title, color = JarvisText, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun StatusLine(name: String, status: String, ready: Boolean) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(7.dp).clip(CircleShape).background(if (ready) JarvisSuccess else JarvisTextDim))
+        Spacer(Modifier.width(9.dp))
+        Text(name, color = JarvisText, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+        Text(status, color = if (ready) JarvisSuccess else JarvisTextDim, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun MiniModule(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = modifier.height(92.dp), shape = RoundedCornerShape(17.dp),
+        colors = CardDefaults.cardColors(containerColor = JarvisPanel)) {
+        Column(Modifier.fillMaxSize().padding(13.dp), verticalArrangement = Arrangement.SpaceBetween) {
+            Icon(icon, null, tint = JarvisCyan)
+            Text(title, color = JarvisText, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(title: String, detail: String) {
+    HudCard {
+        Icon(Icons.Default.Inbox, null, tint = JarvisCyan)
+        Text(title, color = JarvisText, fontWeight = FontWeight.Bold)
+        Text(detail, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
 private fun StatCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = modifier, shape = RoundedCornerShape(17.dp), colors = CardDefaults.cardColors(containerColor = JarvisPanel)) {
+    Card(onClick = onClick, modifier = modifier, shape = RoundedCornerShape(17.dp),
+        colors = CardDefaults.cardColors(containerColor = JarvisPanel)) {
         Column(Modifier.padding(12.dp)) {
             Icon(icon, null, tint = JarvisCyan)
             Text(value, color = JarvisText, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -233,11 +412,17 @@ private fun StatCard(title: String, value: String, icon: androidx.compose.ui.gra
 
 @Composable
 private fun QuickCard(title: String, subtitle: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp), colors = CardDefaults.cardColors(containerColor = JarvisPanel)) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp),
+        colors = CardDefaults.cardColors(containerColor = JarvisPanel)) {
         Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(43.dp).background(JarvisCyan.copy(alpha = .10f), RoundedCornerShape(13.dp)), contentAlignment = Alignment.Center) { Icon(icon, null, tint = JarvisCyan) }
+            Box(Modifier.size(43.dp).background(JarvisCyan.copy(alpha = .10f), RoundedCornerShape(13.dp)), contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = JarvisCyan)
+            }
             Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) { Text(title, color = JarvisText, fontWeight = FontWeight.SemiBold); Text(subtitle, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall) }
+            Column(Modifier.weight(1f)) {
+                Text(title, color = JarvisText, fontWeight = FontWeight.SemiBold)
+                Text(subtitle, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+            }
             Icon(Icons.Default.ChevronRight, null, tint = JarvisCyan)
         }
     }
