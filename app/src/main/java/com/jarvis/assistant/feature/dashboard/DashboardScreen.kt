@@ -485,7 +485,7 @@ private fun ReactorPanel(onMicPress: () -> Unit) {
 }
 
 @Composable
-private fun HudCard(content: @Composable ColumnScope.() -> Unit) {
+fun HudCard(content: @Composable ColumnScope.() -> Unit) {
     Card(Modifier.fillMaxWidth().border(1.dp, JarvisCyan.copy(alpha = .20f), RoundedCornerShape(22.dp)),
         shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = JarvisPanel.copy(alpha = .94f))) {
         Column(Modifier.padding(15.dp), content = content)
@@ -493,7 +493,7 @@ private fun HudCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun SectionHeading(kicker: String, title: String) {
+fun SectionHeading(kicker: String, title: String) {
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(kicker, color = JarvisCyan, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
         Text(title, color = JarvisText, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
@@ -501,7 +501,7 @@ private fun SectionHeading(kicker: String, title: String) {
 }
 
 @Composable
-private fun StatusLine(name: String, status: String, ready: Boolean) {
+fun StatusLine(name: String, status: String, ready: Boolean) {
     Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(7.dp).clip(CircleShape).background(if (ready) JarvisSuccess else JarvisTextDim))
         Spacer(Modifier.width(9.dp))
@@ -522,7 +522,7 @@ private fun MiniModule(title: String, icon: androidx.compose.ui.graphics.vector.
 }
 
 @Composable
-private fun EmptyState(title: String, detail: String) {
+fun EmptyState(title: String, detail: String) {
     HudCard {
         Icon(Icons.Default.Inbox, null, tint = JarvisCyan)
         Text(title, color = JarvisText, fontWeight = FontWeight.Bold)
