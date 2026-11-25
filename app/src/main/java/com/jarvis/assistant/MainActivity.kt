@@ -36,8 +36,7 @@ class MainActivity : ComponentActivity() {
     private val prefs by lazy {
         val masterKey = MasterKey.Builder(this).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
         EncryptedSharedPreferences.create(
-            this, "jarvis_secure",
-            masterKey,
+            this, "jarvis_secure", masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
@@ -60,12 +59,9 @@ class MainActivity : ComponentActivity() {
         }
         speechMgr = SpeechRecognizerManager(this)
         ttsMgr = TtsManager(this).also { it.init() }
-
         lifecycleScope.launch {
             speechMgr.result.collect { recognized ->
-                if (!recognized.isNullOrBlank()) {
-                    sendMessage(recognized) { reply -> ttsMgr.speak(reply) }
-                }
+                if (!recognized.isNullOrBlank()) sendMessage(recognized) { reply -> ttsMgr.speak(reply) }
             }
         }
 
@@ -75,18 +71,30 @@ class MainActivity : ComponentActivity() {
                     initialApiKey = runCatching { prefs.getString("api_key", "").orEmpty() }.getOrDefault(""),
                     initialModel = runCatching { prefs.getString("model", "openrouter/free").orEmpty() }.getOrDefault("openrouter/free"),
                     initialBaseUrl = runCatching { prefs.getString("base_url", "https://openrouter.ai/api/v1").orEmpty() }.getOrDefault("https://openrouter.ai/api/v1"),
+                    initialBackupApiKey = runCatching { prefs.getString("backup_api_key", "").orEmpty() }.getOrDefault(""),
+                    initialBackupModel = runCatching { prefs.getString("backup_model", "llama-3.3-70b-versatile").orEmpty() }.getOrDefault("llama-3.3-70b-versatile"),
+                    initialBackupBaseUrl = runCatching { prefs.getString("backup_base_url", "https://api.groq.com/openai/v1").orEmpty() }.getOrDefault("https://api.groq.com/openai/v1"),
                     memoryItems = savedMemories,
                     taskItems = savedTasks,
                     onAddMemory = { value -> lifecycleScope.launch { database.memoryDao().insert(MemoryEntity(content = value)) } },
                     onAddTask = { value -> lifecycleScope.launch { database.taskDao().insert(TaskEntity(title = value)) } },
                     onMicPress = { startSpeech() },
                     onSendPress = { message, onReply -> sendMessage(message, onReply) },
-                    onSaveSettings = { key, model, url ->
+                    onSaveSettings = { key, model, url, backupKey, backupModel, backupUrl ->
                         runCatching {
-                            prefs.edit().putString("api_key", key.trim()).putString("model", model.trim())
-                                .putString("base_url", url.trim()).apply()
-                        }.onSuccess { Toast.makeText(this, "AI ayarları güvenli alana kaydedildi.", Toast.LENGTH_SHORT).show() }
-                            .onFailure { Toast.makeText(this, "Ayarlar kaydedilemedi: ${it.message}", Toast.LENGTH_LONG).show() }
+                            prefs.edit()
+                                .putString("api_key", key.trim())
+                                .putString("model", model.trim())
+                                .putString("base_url", url.trim())
+                                .putString("backup_api_key", backupKey.trim())
+                                .putString("backup_model", backupModel.trim())
+                                .putString("backup_base_url", backupUrl.trim())
+                                .apply()
+                        }.onSuccess {
+                            Toast.makeText(this, "Birincil ve yedek AI ayarları güvenli alana kaydedildi.", Toast.LENGTH_SHORT).show()
+                        }.onFailure {
+                            Toast.makeText(this, "Ayarlar kaydedilemedi: \${it.message}", Toast.LENGTH_LONG).show()
+                        }
                     },
                     onPhoneAction = { action ->
                         val result = PhoneActions.run(this, action)
@@ -121,34 +129,38 @@ class MainActivity : ComponentActivity() {
         history.add("user" to clean)
         lifecycleScope.launch {
             val reply = try {
-                JarvisAiClient.chat(
-                    prefs.getString("api_key", "").orEmpty(),
-                    prefs.getString("model", "openrouter/free").orEmpty(),
-                    history.toList(),
-                    prefs.getString("base_url", "https://openrouter.ai/api/v1").orEmpty()
+                JarvisAiClient.chatWithFallback(
+                    primaryKey = prefs.getString("api_key", "").orEmpty(),
+                    primaryModel = prefs.getString("model", "openrouter/free").orEmpty(),
+                    primaryUrl = prefs.getString("base_url", "https://openrouter.ai/api/v1").orEmpty(),
+                    backupKey = prefs.getString("backup_api_key", "").orEmpty(),
+                    backupModel = prefs.getString("backup_model", "llama-3.3-70b-versatile").orEmpty(),
+                    backupUrl = prefs.getString("backup_base_url", "https://api.groq.com/openai/v1").orEmpty(),
+                    messages = history.toList()
                 )
             } catch (e: Exception) {
                 offlineReply(clean) + if (prefs.getString("api_key", "").isNullOrBlank())
-                    "\n\nOnline AI için Ayarlar bölümünden OpenRouter API anahtarını ekleyebilirsin."
-                else "\n\nAI bağlantı notu: ${e.message ?: "bağlantı hatası"}"
+                    "\n\nOnline AI için Kontrol bölümünden birincil veya yedek sağlayıcı anahtarı ekleyebilirsin."
+                else "\n\nAI bağlantı notu: \${e.message ?: "bağlantı hatası"}"
             }
             history.add("assistant" to reply)
             onReply(reply)
         }
     }
 
-
     private fun offlineReply(command: String): String {
         val q = command.lowercase()
         return when {
-            "saat" in q || "tarih" in q -> "Şu an: ${TimeUtils.nowFormatted()}"
+            "saat" in q || "tarih" in q -> "Şu an: \${TimeUtils.nowFormatted()}"
             "merhaba" in q -> "Merhaba. Ben JARVIS. Nasıl yardımcı olabilirim?"
-            "nasılsın" in q -> "Sistemlerim çalışır durumda."
+            "nasılsın" in q -> "Yerel sistemlerim çalışır durumda."
             "alarm" in q -> {
                 runOnUiThread { runCatching { startActivity(Intent(AlarmClock.ACTION_SET_ALARM)) } }
                 "Alarm kurma ekranını açıyorum."
             }
-            else -> "Komutunu aldım. Bu işlem için çevrimdışı bir yetenek tanımlı değil."
+            "hafıza" in q || "hafiza" in q -> "Kişisel hafızanı Merkez ekranındaki Hafıza bölümünden yönetebilirsin."
+            "görev" in q || "gorev" in q -> "Görevlerini Kontrol bölümündeki görev listesinde görebilirsin."
+            else -> "Komutunu aldım. Bu işlem için henüz çevrimdışı bir yetenek tanımlı değil."
         }
     }
 
