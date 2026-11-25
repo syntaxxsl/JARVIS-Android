@@ -428,6 +428,33 @@ fun DashboardScreen(
                     }
                 }
             }
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showStartup,
+                enter = fadeIn(tween(100)),
+                exit = fadeOut(tween(420)),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(
+                    Modifier.fillMaxSize().background(
+                        Brush.radialGradient(listOf(JarvisAccent.copy(alpha = .30f), JarvisBgDeep, JarvisBgDeep))
+                    ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                        Box(
+                            Modifier.size(88.dp).clip(CircleShape)
+                                .background(JarvisCyan.copy(alpha = .08f))
+                                .border(1.dp, JarvisCyan.copy(alpha = .60f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Memory, null, tint = JarvisCyan, modifier = Modifier.size(46.dp))
+                        }
+                        Text("J.A.R.V.I.S.", color = JarvisText, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                        Text("ORBIT INTELLIGENCE SYSTEM", color = JarvisCyan, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("SİSTEM BAŞLATILIYOR", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
         }
     }
 }
