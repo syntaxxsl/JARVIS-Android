@@ -17,6 +17,7 @@ import com.jarvis.assistant.core.ui.theme.JarvisTheme
 import com.jarvis.assistant.feature.dashboard.DashboardScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
