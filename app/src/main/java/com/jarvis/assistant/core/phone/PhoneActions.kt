@@ -17,7 +17,7 @@ import android.widget.Toast
  */
 object PhoneActions {
     fun run(context: Context, action: String): String {
-        return try {
+        val result = try {
             when (action) {
                 "volume_up", "volume_down", "volume_mute" -> {
                     val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -81,6 +81,8 @@ object PhoneActions {
         } catch (error: Exception) {
             "İşlem gerçekleştirilemedi: ${error.message ?: "Android kısıtlaması"}"
         }
+        PhoneActionHistory.record(context, action, result)
+        return result
     }
 
     private fun open(context: Context, intent: Intent): String {
