@@ -182,7 +182,7 @@ fun DashboardScreen(
                                 item {
                                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                         MiniModule("AI SOHBET", Icons.Default.Forum, Modifier.weight(1f)) { page = "chat" }
-                                        MiniModule("AI ROUTER", Icons.Default.AccountTree, Modifier.weight(1f)) { page = "control" }
+                                        MiniModule("AI ROUTER", Icons.Default.AccountTree, Modifier.weight(1f)) { page = "router" }
                                     }
                                 }
                                 item {
@@ -392,7 +392,75 @@ fun DashboardScreen(
                                 }
                             }
                         }
-                        else -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        "control" -> LazyColumn(Modifier.fillMaxSize().padding(17.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                            item { SectionHeading("ORBIT CONTROL CENTER", "Cihaz ve izinli sistem kontrolleri") }
+                            item {
+                                HudCard {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(Modifier.size(38.dp).clip(CircleShape).background(JarvisCyan.copy(alpha = .12f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Hub, null, tint = JarvisCyan)
+                                        }
+                                        Spacer(Modifier.width(10.dp))
+                                        Column(Modifier.weight(1f)) {
+                                            Text("JARVIS SYSTEM CORE", color = JarvisText, fontWeight = FontWeight.Bold)
+                                            Text("Android tarafından izin verilen canlı cihaz telemetrisi", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                                        }
+                                        Text("LIVE", color = JarvisSuccess, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+                            }
+                            item { LiveDeviceStatusCard() }
+                            item { SectionHeading("HIZLI SİSTEM ERİŞİMİ", "Android kontrol panelleri") }
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    MiniModule("WI-FI", Icons.Default.Wifi, Modifier.weight(1f)) { onPhoneAction("wifi") }
+                                    MiniModule("BLUETOOTH", Icons.Default.Bluetooth, Modifier.weight(1f)) { onPhoneAction("bluetooth") }
+                                }
+                            }
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    MiniModule("EKRAN", Icons.Default.Brightness6, Modifier.weight(1f)) { onPhoneAction("display") }
+                                    MiniModule("SES", Icons.Default.VolumeUp, Modifier.weight(1f)) { onPhoneAction("sound") }
+                                }
+                            }
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    MiniModule("PİL", Icons.Default.BatteryChargingFull, Modifier.weight(1f)) { onPhoneAction("battery") }
+                                    MiniModule("KONUM", Icons.Default.LocationOn, Modifier.weight(1f)) { onPhoneAction("location") }
+                                }
+                            }
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    MiniModule("UYGULAMALAR", Icons.Default.Apps, Modifier.weight(1f)) { onPhoneAction("apps") }
+                                    MiniModule("İZİNLER", Icons.Default.Security, Modifier.weight(1f)) { onPhoneAction("permissions") }
+                                }
+                            }
+                            item { SectionHeading("JARVIS MODÜLLERİ", "Kontrol merkezinden eriş") }
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    MiniModule("BİLDİRİMLER", Icons.Default.Notifications, Modifier.weight(1f)) { page = "notifications" }
+                                    MiniModule("KİŞİSEL HAFIZA", Icons.Default.Psychology, Modifier.weight(1f)) { page = "memory" }
+                                }
+                            }
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    MiniModule("BELGE ANALİZİ", Icons.Default.DocumentScanner, Modifier.weight(1f)) { page = "documents" }
+                                    MiniModule("AI ROUTER", Icons.Default.AccountTree, Modifier.weight(1f)) { page = "router" }
+                                }
+                            }
+                            item {
+                                HudCard {
+                                    Text("GÜVENLİ DURDURMA", color = JarvisDanger, fontWeight = FontWeight.Bold)
+                                    Text("Bu kontrol şu anda JARVIS'in sesli yanıtını durdurur. Android'in başka uygulamalardaki işlemlerini zorla sonlandırmaz.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                    OutlinedButton(onClick = onStopSpeaking, modifier = Modifier.fillMaxWidth()) {
+                                        Icon(Icons.Default.StopCircle, null, tint = JarvisDanger)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("JARVIS SESİNİ DURDUR", color = JarvisDanger)
+                                    }
+                                }
+                            }
+                        }
+                        "router" -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             item { SectionHeading("JARVIS CONTROL", "AI yönlendirici ve sistem yönetimi") }
                             item {
                                 HudCard {
@@ -425,6 +493,7 @@ fun DashboardScreen(
                             item { Divider(color = JarvisCyan.copy(alpha = .22f)) }
                             item { OutlinedButton(onClick = onStopSpeaking, Modifier.fillMaxWidth()) { Icon(Icons.Default.Stop, null); Text("Sesli yanıtı durdur") } }
                         }
+                        else -> { }
                     }
                 }
             }
