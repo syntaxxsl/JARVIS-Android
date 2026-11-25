@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="jarvis_bg">#0A0E1A</color>
+    <color name="jarvis_bg_deep">#050810</color>
+    <color name="jarvis_panel">#111827</color>
+    <color name="jarvis_panel_glass">#1A2236</color>
+    <color name="jarvis_neon_blue">#00D4FF</color>
+    <color name="jarvis_cyan">#00FFFF</color>
+    <color name="jarvis_accent">#3B82F6</color>
+    <color name="jarvis_text">#E6F1FF</color>
+    <color name="jarvis_text_dim">#94A3B8</color>
+    <color name="jarvis_danger">#FF4D6D</color>
+    <color name="jarvis_success">#22C55E</color>
+</resources>

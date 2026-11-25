@@ -1,0 +1,25 @@
+# Build outputs
+/build/
+
+# Gradle files
+.gradle/
+gradle.properties
+local.properties
+
+# IDE files
+*.iml
+.idea/
+.vscode/
+
+# Android Studio
+*.apk
+*.aab
+
+# Local configuration
+local.conf
+
+# ZIP archives
+*.zip
+
+# Temporary
+tmp/

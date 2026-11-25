@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">JARVIS</string>
+    <string name="greeting_morning">Günaydın</string>
+    <string name="greeting_afternoon">İyi öğleden sonra</string>
+    <string name="greeting_evening">İyi akşamlar</string>
+    <string name="listening">Dinliyorum…</string>
+    <string name="thinking">Düşünüyorum…</string>
+    <string name="speaking">Konuşuyorum…</string>
+    <string name="idle">Hazırım</string>
+    <string name="send">Gönder</string>
+    <string name="type_message">Mesaj yazın…</string>
+    <string name="mic_permission_rationale">Sesli komutlar için mikrofon izni gerekli.</string>
+    <string name="offline_mode">Çevrimdışı mod</string>
+    <string name="online">Çevrimiçi</string>
+    <string name="no_internet">İnternet bağlantısı yok</string>
+    <string name="settings">Ayarlar</string>
+    <string name="memory">Hafıza</string>
+    <string name="agents">Ajanlar</string>
+    <string name="chat">Sohbet</string>
+    <string name="dashboard">Kontrol Paneli</string>
+</resources>
