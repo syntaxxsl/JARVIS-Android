@@ -20,6 +20,7 @@ import com.jarvis.assistant.core.data.local.entity.MemoryEntity
 import com.jarvis.assistant.core.data.local.entity.TaskEntity
 import com.jarvis.assistant.core.notifications.NotificationReplyBridge
 import com.jarvis.assistant.core.phone.PhoneActions
+import com.jarvis.assistant.core.phone.AppLauncher
 import com.jarvis.assistant.core.common.util.TimeUtils
 import com.jarvis.assistant.core.voice.recognition.SpeechRecognizerManager
 import com.jarvis.assistant.core.voice.tts.TtsManager
@@ -146,6 +147,24 @@ class MainActivity : ComponentActivity() {
     private fun sendMessage(message: String, onReply: (String) -> Unit) {
         val clean = message.trim()
         if (clean.isBlank()) return
+        val asksToOpenApp = listOf(" aç", " ac", " başlat", " çalıştır").any { clean.lowercase().contains(it) }
+        if (asksToOpenApp) {
+            val match = AppLauncher.installedLaunchableApps(this)
+                .filter { clean.lowercase().contains(it.label.lowercase()) }
+                .maxByOrNull { it.label.length }
+            if (match != null) {
+                val opened = AppLauncher.launch(this, match.packageName)
+                val reply = if (opened) "${match.label} açılıyor." else "${match.label} açılamadı."
+                lifecycleScope.launch {
+                    database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "user", content = clean))
+                    database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "assistant", content = reply))
+                }
+                history.add("user" to clean)
+                history.add("assistant" to reply)
+                onReply(reply)
+                return
+            }
+        }
         val currentHistory = history.toList().let { existing -> if (existing.lastOrNull() == ("user" to clean)) existing else existing + ("user" to clean) }.takeLast(20)
         lifecycleScope.launch {
             database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "user", content = clean))
