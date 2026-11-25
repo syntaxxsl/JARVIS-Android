@@ -36,6 +36,16 @@ class JarvisNotificationListener : NotificationListenerService() {
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         NotificationReplyBridge.remove(sbn.key)
+        runCatching {
+            val prefs = getSharedPreferences(STORE, MODE_PRIVATE)
+            val current = JSONArray(prefs.getString(KEY, "[]") ?: "[]")
+            val next = JSONArray()
+            for (index in 0 until current.length()) {
+                val item = current.optJSONObject(index) ?: continue
+                if (item.optString("key") != sbn.key) next.put(item)
+            }
+            prefs.edit().putString(KEY, next.toString()).apply()
+        }
     }
 
     companion object {
