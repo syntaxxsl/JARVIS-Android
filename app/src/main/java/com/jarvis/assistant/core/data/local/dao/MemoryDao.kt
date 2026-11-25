@@ -23,7 +23,7 @@ interface MemoryDao {
     suspend fun deleteByContent(content: String)
 
     @Query("UPDATE memories SET content = :newContent, updatedAt = :updatedAt WHERE content = :oldContent")
-    suspend fun updateContent(oldContent: String, newContent: String, updatedAt: Long = System.currentTimeMillis())
+    suspend fun updateContent(oldContent: String, newContent: String, updatedAt: Long)
 
     @Query("SELECT * FROM memories ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<MemoryEntity>>
