@@ -19,4 +19,5 @@
     <string name="agents">Ajanlar</string>
     <string name="chat">Sohbet</string>
     <string name="dashboard">Kontrol Paneli</string>
+    <string name="accessibility_service_description">JARVIS, yalnızca senin başlattığın işlemlerde açık uygulamanın ekrandaki metnini okuyabilir ve seçtiğin öğelerle etkileşebilir. Gizli veya otomatik işlem yapmaz.</string>
 </resources>
