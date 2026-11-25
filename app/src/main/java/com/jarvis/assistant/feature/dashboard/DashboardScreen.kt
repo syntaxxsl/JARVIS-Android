@@ -33,6 +33,8 @@ private data class ChatLine(val role: String, val text: String)
 @Composable
 fun DashboardScreen(
     initialApiKey: String, initialModel: String, initialBaseUrl: String,
+    memoryItems: List<String>, taskItems: List<String>,
+    onAddMemory: (String) -> Unit, onAddTask: (String) -> Unit,
     onMicPress: () -> Unit,
     onSendPress: (String, (String) -> Unit) -> Unit,
     onSaveSettings: (String, String, String) -> Unit,
@@ -48,8 +50,6 @@ fun DashboardScreen(
     var memoryText by rememberSaveable { mutableStateOf("") }
     var taskText by rememberSaveable { mutableStateOf("") }
     val chat = remember { mutableStateListOf(ChatLine("assistant", "Merhaba. Ben JARVIS. Sistemlerin hazır. Nasıl yardımcı olabilirim?")) }
-    val memories = remember { mutableStateListOf<String>() }
-    val tasks = remember { mutableStateListOf<String>() }
     val agents = listOf(
         "Araştırma" to "Bilgi topla, karşılaştır ve özetle",
         "Yazılım Geliştirici" to "Kod yaz, hata ayıkla ve mimari tasarla",
@@ -131,8 +131,8 @@ fun DashboardScreen(
                         }
                         item {
                             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                                StatCard("HAFIZA", memories.size.toString(), Icons.Default.Psychology, Modifier.weight(1f)) { page = "memory" }
-                                StatCard("GÖREV", tasks.size.toString(), Icons.Default.TaskAlt, Modifier.weight(1f)) { page = "more" }
+                                StatCard("HAFIZA", memoryItems.size.toString(), Icons.Default.Psychology, Modifier.weight(1f)) { page = "memory" }
+                                StatCard("GÖREV", taskItems.size.toString(), Icons.Default.TaskAlt, Modifier.weight(1f)) { page = "more" }
                                 StatCard("AJAN", "06", Icons.Default.Hub, Modifier.weight(1f)) { page = "agents" }
                             }
                         }
@@ -197,8 +197,8 @@ fun DashboardScreen(
                     Text("KİŞİSEL HAFIZA", color = JarvisCyan, style = MaterialTheme.typography.labelMedium)
                     Text("JARVIS'in not defteri", color = JarvisText, style = MaterialTheme.typography.headlineSmall)
                     OutlinedTextField(memoryText, { memoryText = it }, Modifier.fillMaxWidth(), label = { Text("Hatırlanacak not") })
-                    Button(onClick = { if (memoryText.isNotBlank()) { memories.add(memoryText.trim()); memoryText = "" } }, Modifier.fillMaxWidth()) { Icon(Icons.Default.Add, null); Text("Hafızaya ekle") }
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(memories) { Text("•  $it", color = JarvisText, modifier = Modifier.fillMaxWidth().background(JarvisPanel, RoundedCornerShape(12.dp)).padding(13.dp)) } }
+                    Button(onClick = { if (memoryText.isNotBlank()) { onAddMemory(memoryText.trim()); memoryText = "" } }, Modifier.fillMaxWidth()) { Icon(Icons.Default.Add, null); Text("Hafızaya ekle") }
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(memoryItems) { Text("•  $it", color = JarvisText, modifier = Modifier.fillMaxWidth().background(JarvisPanel, RoundedCornerShape(12.dp)).padding(13.dp)) } }
                 }
                 else -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item { Text("SİSTEM MERKEZİ", color = JarvisCyan, style = MaterialTheme.typography.labelMedium); Text("Yapılandırma ve araçlar", color = JarvisText, style = MaterialTheme.typography.headlineSmall) }
@@ -211,8 +211,8 @@ fun DashboardScreen(
                     item { Divider(color = JarvisTextDim.copy(alpha = .3f)) }
                     item { Text("GÖREV LİSTESİ", color = JarvisCyan, fontWeight = FontWeight.Bold) }
                     item { OutlinedTextField(taskText, { taskText = it }, Modifier.fillMaxWidth(), label = { Text("Yeni görev") }) }
-                    item { Button(onClick = { if (taskText.isNotBlank()) { tasks.add(taskText.trim()); taskText = "" } }, Modifier.fillMaxWidth()) { Icon(Icons.Default.AddTask, null); Text("Görev ekle") } }
-                    items(tasks) { Text("•  $it", color = JarvisText, modifier = Modifier.fillMaxWidth().background(JarvisPanel, RoundedCornerShape(12.dp)).padding(13.dp)) }
+                    item { Button(onClick = { if (taskText.isNotBlank()) { onAddTask(taskText.trim()); taskText = "" } }, Modifier.fillMaxWidth()) { Icon(Icons.Default.AddTask, null); Text("Görev ekle") } }
+                    items(taskItems) { Text("•  $it", color = JarvisText, modifier = Modifier.fillMaxWidth().background(JarvisPanel, RoundedCornerShape(12.dp)).padding(13.dp)) }
                     item { OutlinedButton(onClick = onStopSpeaking, Modifier.fillMaxWidth()) { Icon(Icons.Default.Stop, null); Text("Sesli yanıtı durdur") } }
                 }
             }
