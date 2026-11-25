@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.jarvis.assistant.core.phone.AppLauncher
 import com.jarvis.assistant.core.phone.JarvisAccessibilityService
+import com.jarvis.assistant.core.phone.PhoneActions
 import com.jarvis.assistant.core.ui.theme.JarvisCyan
 import com.jarvis.assistant.core.ui.theme.JarvisPanel
 import com.jarvis.assistant.core.ui.theme.JarvisText
@@ -37,6 +38,7 @@ fun AppControlScreen() {
     var status by remember { mutableStateOf("") }
     val enabled = isJarvisAccessibilityEnabled(context)
     val filtered = apps.filter { it.label.contains(query, ignoreCase = true) }
+    val systemActions = listOf("alarm" to "Alarm kur", "wifi" to "Wi-Fi ayarları", "bluetooth" to "Bluetooth ayarları", "sound" to "Ses ayarları", "display" to "Ekran ayarları", "battery" to "Pil ayarları", "apps" to "Uygulama ayarları", "notifications" to "Bildirim erişimi", "permissions" to "JARVIS izinleri", "location" to "Konum ayarları", "settings" to "Tüm Android ayarları")
     LazyColumn(
         Modifier.fillMaxSize().padding(17.dp),
         contentPadding = PaddingValues(bottom = 24.dp),
@@ -109,6 +111,17 @@ fun AppControlScreen() {
                         Text(app.packageName, color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
                     }
                     Text("AÇ", color = JarvisCyan, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+        item { Text("ANDROID SİSTEM KISAYOLLARI", color = JarvisCyan, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) }
+        items(systemActions) { (id, label) ->
+            Card(onClick = { status = PhoneActions.run(context, id) }, modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(15.dp), colors = CardDefaults.cardColors(containerColor = JarvisPanel)) {
+                Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Default.Security, null, tint = JarvisCyan)
+                    Text(label, color = JarvisText, modifier = Modifier.weight(1f))
+                    Text("AÇ", color = JarvisCyan)
                 }
             }
         }
