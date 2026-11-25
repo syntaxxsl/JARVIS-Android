@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
     primary = JarvisNeonBlue,
@@ -22,16 +23,21 @@ private val LightColorScheme = lightColorScheme(
     primary = JarvisAccent,
     secondary = JarvisNeonBlue,
     tertiary = JarvisCyan,
-    background = JarvisText,
+    background = Color(0xFFFFFFFF),
     surface = Color(0xFFFFFFFF),
     onBackground = JarvisBgDeep,
     onSurface = JarvisBgDeep
 )
 
-import androidx.compose.ui.graphics.Color
-
 @Composable
-fun JarvisTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+fun JarvisTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    MaterialTheme(colorScheme = colorScheme, typography = JarvisTypography, content = content)
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = JarvisTypography,
+        content = content
+    )
 }
