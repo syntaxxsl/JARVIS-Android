@@ -367,24 +367,7 @@ fun DashboardScreen(
                                 }
                             }
                         }
-                        "phone" -> {
-                            val actions = listOf(
-                                "alarm" to "Alarm kur", "wifi" to "Wi-Fi ayarları", "bluetooth" to "Bluetooth",
-                                "sound" to "Ses ayarları", "display" to "Ekran ayarları", "battery" to "Pil tasarrufu",
-                                "apps" to "Uygulama ayarları", "notifications" to "Bildirim erişimi",
-                                "permissions" to "JARVIS izinleri", "location" to "Konum ayarları", "settings" to "Tüm ayarlar"
-                            )
-                            LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                item { SectionHeading("TELEFON KONTROLÜ", "Android ile güvenli bağlantı") }
-                                item {
-                                    HudCard {
-                                        Text("CİHAZ ARAÇLARI", color = JarvisCyan, fontWeight = FontWeight.Bold)
-                                        Text("Android izinleri nedeniyle bazı işlemler sistem ekranında onayınla tamamlanır.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
-                                    }
-                                }
-                                items(actions) { (id, label) -> QuickCard(label, "Android sistem aracını aç", Icons.Default.Tune) { onPhoneAction(id) } }
-                            }
-                        }
+                        "phone" -> AppControlScreen()
                         "memory" -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             item { SectionHeading("KİŞİSEL HAFIZA", "JARVIS'in yerel not defteri") }
                             item { OutlinedTextField(memoryText, { memoryText = it }, Modifier.fillMaxWidth(), label = { Text("Hatırlanacak not") }) }
