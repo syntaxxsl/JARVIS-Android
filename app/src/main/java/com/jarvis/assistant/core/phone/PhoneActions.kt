@@ -15,6 +15,9 @@ object PhoneActions {
             "sound" -> Intent(Settings.ACTION_SOUND_SETTINGS)
             "display" -> Intent(Settings.ACTION_DISPLAY_SETTINGS)
             "apps" -> Intent(Settings.ACTION_APPLICATION_SETTINGS)
+            "notifications" -> Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+            "permissions" -> Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply { data = android.net.Uri.parse("package:" + context.packageName) }
+            "location" -> Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             "battery" -> Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)
             else -> null
         } ?: return "Bu telefon komutu henüz desteklenmiyor."
