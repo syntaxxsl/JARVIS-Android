@@ -54,6 +54,7 @@ fun DashboardScreen(
     memoryItems: List<String>, taskItems: List<String>,
     chatItems: List<Pair<String, String>>,
     onNewChat: () -> Unit,
+    onApproveNotificationReply: (String, String) -> Boolean,
     onAddMemory: (String) -> Unit, onAddTask: (String) -> Unit,
     onMicPress: () -> Unit,
     onSendPress: (String, (String) -> Unit) -> Unit,
@@ -316,10 +317,38 @@ fun DashboardScreen(
                                     }
                                 }
                                 if (notificationRows.isEmpty()) item { EmptyState("Henüz bildirim yok", "İzin verdikten sonra desteklenen bildirimler burada görünür.") }
-                                items(notificationRows) { row ->
+                                items(notificationRows, key = { it.key }) { row ->
+                                    var draft by remember(row.key) { mutableStateOf("") }
+                                    var sendStatus by remember(row.key) { mutableStateOf("") }
                                     HudCard {
-                                        Text(row.first, color = JarvisCyan, fontWeight = FontWeight.Bold)
-                                        Text(row.second, color = JarvisText)
+                                        Text(row.title, color = JarvisCyan, fontWeight = FontWeight.Bold)
+                                        Text(row.text, color = JarvisText)
+                                        if (row.canReply) {
+                                            OutlinedButton(onClick = {
+                                                sendStatus = "Yanıt taslağı hazırlanıyor..."
+                                                onSendPress(
+                                                    "Aşağıdaki bildirime uygun, kısa ve doğal bir Türkçe yanıt taslağı hazırla. Yalnızca yanıt metnini ver. Gönderen: ${row.title}. Gelen mesaj: ${row.text}"
+                                                ) { result ->
+                                                    draft = result
+                                                    sendStatus = ""
+                                                }
+                                            }, modifier = Modifier.fillMaxWidth()) {
+                                                Icon(Icons.Default.AutoAwesome, null); Text("Yanıt taslağı oluştur")
+                                            }
+                                            if (sendStatus.isNotBlank()) Text(sendStatus, color = JarvisTextDim)
+                                            if (draft.isNotBlank()) {
+                                                OutlinedTextField(draft, { draft = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Gönderilecek yanıtı kontrol et") })
+                                                Button(onClick = {
+                                                    val sent = onApproveNotificationReply(row.key, draft)
+                                                    sendStatus = if (sent) "Yanıt gönderildi." else "Bu bildirimin yanıt kanalı artık kullanılamıyor."
+                                                    if (sent) draft = ""
+                                                }, modifier = Modifier.fillMaxWidth()) {
+                                                    Icon(Icons.Default.Send, null); Text("Onayla ve yanıtı gönder")
+                                                }
+                                            }
+                                        } else {
+                                            Text("Bu bildirim doğrudan yanıt desteklemiyor.", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                                        }
                                     }
                                 }
                             }
@@ -596,7 +625,14 @@ private fun formatBytes(bytes: Long): String {
 }
 
 
-private fun readJarvisNotifications(context: Context): List<Pair<String, String>> {
+private data class NotificationItem(
+    val key: String,
+    val title: String,
+    val text: String,
+    val canReply: Boolean
+)
+
+private fun readJarvisNotifications(context: Context): List<NotificationItem> {
     val raw = context.getSharedPreferences("jarvis_notification_store", Context.MODE_PRIVATE)
         .getString("recent_notifications", "[]") ?: "[]"
     return runCatching {
@@ -605,7 +641,12 @@ private fun readJarvisNotifications(context: Context): List<Pair<String, String>
             val item = array.optJSONObject(index) ?: return@mapNotNull null
             val title = item.optString("title").ifBlank { item.optString("package") }
             val body = item.optString("text")
-            (title to body).takeIf { title.isNotBlank() || body.isNotBlank() }
+            NotificationItem(
+                key = item.optString("key"),
+                title = title,
+                text = body,
+                canReply = item.optBoolean("canReply")
+            ).takeIf { it.key.isNotBlank() && (title.isNotBlank() || body.isNotBlank()) }
         }
     }.getOrDefault(emptyList())
 }
