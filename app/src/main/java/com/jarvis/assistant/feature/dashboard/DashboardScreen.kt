@@ -74,6 +74,8 @@ fun DashboardScreen(
     var backupModel by rememberSaveable { mutableStateOf(initialBackupModel) }
     var backupUrl by rememberSaveable { mutableStateOf(initialBackupBaseUrl) }
     var memoryText by rememberSaveable { mutableStateOf("") }
+    var showStartup by rememberSaveable { mutableStateOf(true) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(760); showStartup = false }
     val chat = remember { mutableStateListOf<ChatLine>() }
     LaunchedEffect(chatItems.size) {
         chat.clear()
@@ -566,7 +568,8 @@ private data class DeviceSnapshot(
     val ramTotal: Long,
     val storageUsed: Long,
     val storageTotal: Long,
-    val network: String
+    val network: String,
+    val charging: Boolean
 )
 
 @Composable
@@ -589,6 +592,7 @@ private fun LiveDeviceStatusCard() {
         }
         Spacer(Modifier.height(12.dp))
         StatusLine("Pil", "${snapshot.battery.coerceAtLeast(0)}%", snapshot.battery >= 20)
+        StatusLine("Şarj durumu", if (snapshot.charging) "ŞARJ OLUYOR" else "PİLDE", snapshot.charging)
         StatusLine("Bellek kullanımı", "$ramPercent%", ramPercent < 90)
         StatusLine("Depolama kullanımı", "$storagePercent%", storagePercent < 90)
         StatusLine("Ağ bağlantısı", snapshot.network, snapshot.network == "BAĞLI")
@@ -610,15 +614,18 @@ private fun readDeviceSnapshot(context: Context): DeviceSnapshot {
     runCatching { context.getSystemService(ActivityManager::class.java)?.getMemoryInfo(memory) }
     val totalRam = memory.totalMem.coerceAtLeast(0L)
     val usedRam = (totalRam - memory.availMem).coerceAtLeast(0L)
-    val stat = StatFs(context.filesDir.absolutePath)
+    val stat = StatFs(android.os.Environment.getDataDirectory().absolutePath)
     val totalStorage = stat.totalBytes
     val usedStorage = (totalStorage - stat.availableBytes).coerceAtLeast(0L)
+    val batteryIntent = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+    val chargeStatus = batteryIntent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+    val charging = chargeStatus == BatteryManager.BATTERY_STATUS_CHARGING || chargeStatus == BatteryManager.BATTERY_STATUS_FULL
     val connectivity = context.getSystemService(ConnectivityManager::class.java)
     val network = connectivity?.activeNetwork
     val caps = connectivity?.getNetworkCapabilities(network)
     val connected = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true &&
         caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-    return DeviceSnapshot(battery, usedRam, totalRam, usedStorage, totalStorage, if (connected) "BAĞLI" else "ÇEVRİMDIŞI")
+    return DeviceSnapshot(battery, usedRam, totalRam, usedStorage, totalStorage, if (connected) "BAĞLI" else "ÇEVRİMDIŞI", charging)
 }
 
 private fun formatBytes(bytes: Long): String {
