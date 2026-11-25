@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             speechMgr.result.collect { recognized ->
                 if (!recognized.isNullOrBlank()) {
-                    sendMessage(recognized) { }
+                    sendMessage(recognized) { reply -> ttsMgr.speak(reply) }
                 }
             }
         }
