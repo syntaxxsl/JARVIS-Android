@@ -7,12 +7,16 @@ import android.os.Bundle
 import android.provider.AlarmClock
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.mutableStateListOf
 import androidx.activity.compose.setContent
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.jarvis.assistant.core.ai.JarvisAiClient
+import com.jarvis.assistant.core.data.local.AppDatabase
+import com.jarvis.assistant.core.data.local.entity.MemoryEntity
+import com.jarvis.assistant.core.data.local.entity.TaskEntity
 import com.jarvis.assistant.core.phone.PhoneActions
 import com.jarvis.assistant.core.common.util.TimeUtils
 import com.jarvis.assistant.core.voice.recognition.SpeechRecognizerManager
@@ -24,6 +28,9 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var speechMgr: SpeechRecognizerManager
+    private lateinit var database: AppDatabase
+    private val savedMemories = mutableStateListOf<String>()
+    private val savedTasks = mutableStateListOf<String>()
     private lateinit var ttsMgr: TtsManager
     private val history = mutableListOf<Pair<String, String>>()
     private val prefs by lazy {
@@ -38,6 +45,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        database = AppDatabase.getInstance(this)
+        lifecycleScope.launch {
+            database.memoryDao().observeAll().collect { rows ->
+                savedMemories.clear()
+                savedMemories.addAll(rows.map { it.content })
+            }
+        }
+        lifecycleScope.launch {
+            database.taskDao().observeAll().collect { rows ->
+                savedTasks.clear()
+                savedTasks.addAll(rows.map { it.title })
+            }
+        }
         speechMgr = SpeechRecognizerManager(this)
         ttsMgr = TtsManager(this).also { it.init() }
 
@@ -55,6 +75,10 @@ class MainActivity : ComponentActivity() {
                     initialApiKey = runCatching { prefs.getString("api_key", "").orEmpty() }.getOrDefault(""),
                     initialModel = runCatching { prefs.getString("model", "openrouter/free").orEmpty() }.getOrDefault("openrouter/free"),
                     initialBaseUrl = runCatching { prefs.getString("base_url", "https://openrouter.ai/api/v1").orEmpty() }.getOrDefault("https://openrouter.ai/api/v1"),
+                    memoryItems = savedMemories,
+                    taskItems = savedTasks,
+                    onAddMemory = { value -> lifecycleScope.launch { database.memoryDao().insert(MemoryEntity(content = value)) } },
+                    onAddTask = { value -> lifecycleScope.launch { database.taskDao().insert(TaskEntity(title = value)) } },
                     onMicPress = { startSpeech() },
                     onSendPress = { message, onReply -> sendMessage(message, onReply) },
                     onSaveSettings = { key, model, url ->
