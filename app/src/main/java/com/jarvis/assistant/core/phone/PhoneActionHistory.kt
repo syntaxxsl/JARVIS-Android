@@ -22,7 +22,7 @@ object PhoneActionHistory {
             put("time", System.currentTimeMillis())
         })
         for (index in 0 until minOf(current.length(), LIMIT - 1)) {
-            current.optJSONObject(index)?.let(next::put)
+            current.optJSONObject(index)?.let { item -> next.put(item) }
         }
         prefs.edit().putString(KEY, next.toString()).apply()
     }
