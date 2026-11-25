@@ -8,7 +8,7 @@ import org.json.JSONObject
 class JarvisNotificationListener : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         if (sbn.packageName == packageName) return
-        val extras = sbn.notification.extras ?: return
+        val extras = runCatching { sbn.notification.extras }.getOrNull() ?: return
         val title = extras.getCharSequence("android.title")?.toString().orEmpty()
         val text = extras.getCharSequence("android.text")?.toString()
             ?: extras.getCharSequence("android.bigText")?.toString().orEmpty()
@@ -29,7 +29,7 @@ class JarvisNotificationListener : NotificationListenerService() {
         })
         for (i in 0 until minOf(current.length(), 29)) {
             val item = current.optJSONObject(i) ?: continue
-            if (item.optLong("time") != sbn.postTime || item.optString("package") != sbn.packageName) next.put(item)
+            if (item.optString("key") != sbn.key) next.put(item)
         }
         prefs.edit().putString(KEY, next.toString()).apply()
     }
