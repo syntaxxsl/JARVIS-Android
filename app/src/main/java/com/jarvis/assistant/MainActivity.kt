@@ -18,6 +18,7 @@ import com.jarvis.assistant.core.data.local.AppDatabase
 import com.jarvis.assistant.core.data.local.entity.ChatMessageEntity
 import com.jarvis.assistant.core.data.local.entity.MemoryEntity
 import com.jarvis.assistant.core.data.local.entity.TaskEntity
+import com.jarvis.assistant.core.notifications.NotificationReplyBridge
 import com.jarvis.assistant.core.phone.PhoneActions
 import com.jarvis.assistant.core.common.util.TimeUtils
 import com.jarvis.assistant.core.voice.recognition.SpeechRecognizerManager
@@ -88,6 +89,11 @@ class MainActivity : ComponentActivity() {
                     taskItems = savedTasks,
                     chatItems = savedChat,
                     onNewChat = { lifecycleScope.launch { database.chatMessageDao().deleteConversation(DEFAULT_CONVERSATION) } },
+                    onApproveNotificationReply = { key, reply ->
+                        val sent = NotificationReplyBridge.send(this, key, reply)
+                        Toast.makeText(this, if (sent) "Yanıt bildirimin üzerinden gönderildi." else "Yanıt gönderilemedi; bildirim artık etkin olmayabilir.", Toast.LENGTH_LONG).show()
+                        sent
+                    },
                     onAddMemory = { value -> lifecycleScope.launch { database.memoryDao().insert(MemoryEntity(content = value)) } },
                     onAddTask = { value -> lifecycleScope.launch { database.taskDao().insert(TaskEntity(title = value)) } },
                     onMicPress = { startSpeech() },
