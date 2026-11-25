@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity() {
                         }.onSuccess {
                             Toast.makeText(this, "Birincil ve yedek AI ayarları güvenli alana kaydedildi.", Toast.LENGTH_SHORT).show()
                         }.onFailure {
-                            Toast.makeText(this, "Ayarlar kaydedilemedi: \${it.message}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "Ayarlar kaydedilemedi: ${it.message}", Toast.LENGTH_LONG).show()
                         }
                     },
                     onPhoneAction = { action ->
@@ -141,7 +141,7 @@ class MainActivity : ComponentActivity() {
             } catch (e: Exception) {
                 offlineReply(clean) + if (prefs.getString("api_key", "").isNullOrBlank())
                     "\n\nOnline AI için Kontrol bölümünden birincil veya yedek sağlayıcı anahtarı ekleyebilirsin."
-                else "\n\nAI bağlantı notu: \${e.message ?: "bağlantı hatası"}"
+                else "\n\nAI bağlantı notu: ${e.message ?: "bağlantı hatası"}"
             }
             history.add("assistant" to reply)
             onReply(reply)
@@ -151,7 +151,7 @@ class MainActivity : ComponentActivity() {
     private fun offlineReply(command: String): String {
         val q = command.lowercase()
         return when {
-            "saat" in q || "tarih" in q -> "Şu an: \${TimeUtils.nowFormatted()}"
+            "saat" in q || "tarih" in q -> "Şu an: ${TimeUtils.nowFormatted()}"
             "merhaba" in q -> "Merhaba. Ben JARVIS. Nasıl yardımcı olabilirim?"
             "nasılsın" in q -> "Yerel sistemlerim çalışır durumda."
             "alarm" in q -> {
