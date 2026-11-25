@@ -75,7 +75,7 @@ fun DashboardScreen(
     var backupUrl by rememberSaveable { mutableStateOf(initialBackupBaseUrl) }
     var memoryText by rememberSaveable { mutableStateOf("") }
     val chat = remember { mutableStateListOf<ChatLine>() }
-    LaunchedEffect(chatItems) {
+    LaunchedEffect(chatItems.size) {
         chat.clear()
         chat.addAll(chatItems.map { ChatLine(it.first, it.second) })
         if (chat.isEmpty()) chat.add(ChatLine("assistant", "Merhaba. Ben JARVIS. Yerel sistemler hazır. Nasıl yardımcı olabilirim?"))
