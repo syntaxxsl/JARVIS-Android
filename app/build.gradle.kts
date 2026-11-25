@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.coil.compose)
+    implementation(libs.mlkit.text.recognition)
     implementation(libs.androidx.security.crypto)
     implementation(libs.timber)
 
