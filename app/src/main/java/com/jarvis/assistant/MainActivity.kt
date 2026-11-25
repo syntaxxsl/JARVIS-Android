@@ -26,6 +26,8 @@ import com.jarvis.assistant.core.voice.recognition.SpeechRecognizerManager
 import com.jarvis.assistant.core.voice.tts.TtsManager
 import com.jarvis.assistant.core.ui.theme.JarvisTheme
 import com.jarvis.assistant.feature.dashboard.DashboardScreen
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
@@ -37,6 +39,7 @@ class MainActivity : ComponentActivity() {
     private val savedChat = mutableStateListOf<Pair<String, String>>()
     private lateinit var ttsMgr: TtsManager
     private val history = mutableListOf<Pair<String, String>>()
+    private var activeResponseJob: Job? = null
     private val prefs by lazy {
         val masterKey = MasterKey.Builder(this).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
         EncryptedSharedPreferences.create(
@@ -122,7 +125,7 @@ class MainActivity : ComponentActivity() {
                         Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
                     },
                     onSpeak = { text -> ttsMgr.speak(text) },
-                    onStopSpeaking = { ttsMgr.stop() }
+                    onStopSpeaking = { stopAllActivity() }
                 )
             }
         }
@@ -166,7 +169,8 @@ class MainActivity : ComponentActivity() {
             }
         }
         val currentHistory = history.toList().let { existing -> if (existing.lastOrNull() == ("user" to clean)) existing else existing + ("user" to clean) }.takeLast(20)
-        lifecycleScope.launch {
+        activeResponseJob?.cancel()
+        activeResponseJob = lifecycleScope.launch {
             database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "user", content = clean))
             val reply = try {
                 JarvisAiClient.chatWithFallback(
@@ -178,6 +182,8 @@ class MainActivity : ComponentActivity() {
                     backupUrl = prefs.getString("backup_base_url", "https://api.groq.com/openai/v1").orEmpty(),
                     messages = currentHistory
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 offlineReply(clean) + if (prefs.getString("api_key", "").isNullOrBlank())
                     "\n\nOnline AI için Kontrol bölümünden birincil veya yedek sağlayıcı anahtarı ekleyebilirsin."
@@ -186,6 +192,14 @@ class MainActivity : ComponentActivity() {
             database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "assistant", content = reply))
             onReply(reply)
         }
+    }
+
+    private fun stopAllActivity() {
+        if (::speechMgr.isInitialized) speechMgr.stopListening()
+        if (::ttsMgr.isInitialized) ttsMgr.stop()
+        activeResponseJob?.cancel()
+        activeResponseJob = null
+        Toast.makeText(this, "JARVIS işlemi durduruldu.", Toast.LENGTH_SHORT).show()
     }
 
     private fun offlineReply(command: String): String {
