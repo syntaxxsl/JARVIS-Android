@@ -39,7 +39,7 @@ object JarvisAiClient {
                 return "Yedek AI sağlayıcısına otomatik geçiş yapıldı.\n\n$response"
             } catch (backupError: Exception) {
                 val first = primaryError?.message ?: "Birincil sağlayıcı anahtarı ayarlanmamış."
-                throw IllegalStateException("Birincil sağlayıcı: $first\nYedek sağlayıcı: \${backupError.message ?: "bağlantı hatası"}")
+                throw IllegalStateException("Birincil sağlayıcı: $first\nYedek sağlayıcı: ${backupError.message ?: "bağlantı hatası"}")
             }
         }
         throw IllegalStateException(primaryError?.message ?: "AI sağlayıcısı yapılandırılmamış. Yerel komutlar kullanılabilir.")
@@ -71,7 +71,7 @@ object JarvisAiClient {
                 val body = response.body?.string().orEmpty()
                 if (!response.isSuccessful) {
                     val detail = runCatching { JSONObject(body).optJSONObject("error")?.optString("message") }.getOrNull()
-                    throw IllegalStateException(detail?.takeIf { it.isNotBlank() } ?: "AI servisi hata verdi (HTTP \${response.code}).")
+                    throw IllegalStateException(detail?.takeIf { it.isNotBlank() } ?: "AI servisi hata verdi (HTTP ${response.code}).")
                 }
                 val text = JSONObject(body).optJSONArray("choices")
                     ?.optJSONObject(0)?.optJSONObject("message")?.optString("content")
