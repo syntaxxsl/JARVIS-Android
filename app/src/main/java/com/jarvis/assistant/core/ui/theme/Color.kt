@@ -2,15 +2,15 @@ package com.jarvis.assistant.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Orbit OS palette: deep space surfaces with cyan / violet holographic accents.
-val JarvisBg = Color(0xFF080A14)
-val JarvisBgDeep = Color(0xFF04050C)
-val JarvisPanel = Color(0xCC11182A)
-val JarvisPanelGlass = Color(0xB31C2340)
-val JarvisNeonBlue = Color(0xFF54DFFF)
-val JarvisCyan = Color(0xFF72E8FF)
-val JarvisAccent = Color(0xFF7867FF)
-val JarvisText = Color(0xFFEAF2FF)
-val JarvisTextDim = Color(0xFF9AA8C2)
-val JarvisDanger = Color(0xFFFF5478)
-val JarvisSuccess = Color(0xFF48E0B0)
+// Stark-inspired interface: graphite, titanium, reactor gold and controlled crimson.
+val JarvisBg = Color(0xFF090B10)
+val JarvisBgDeep = Color(0xFF050609)
+val JarvisPanel = Color(0xD0141922)
+val JarvisPanelGlass = Color(0xB31B202B)
+val JarvisNeonBlue = Color(0xFFFFC46B)
+val JarvisCyan = Color(0xFFFFC46B)
+val JarvisAccent = Color(0xFF9E2639)
+val JarvisText = Color(0xFFF2F3F6)
+val JarvisTextDim = Color(0xFF9AA1AE)
+val JarvisDanger = Color(0xFFFF5266)
+val JarvisSuccess = Color(0xFF62D6A8)
