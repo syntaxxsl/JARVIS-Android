@@ -30,7 +30,7 @@ fun DashboardScreen(
     initialModel: String,
     initialBaseUrl: String,
     onMicPress: () -> Unit,
-    onSendPress: (String) -> Unit,
+    onSendPress: (String, (String) -> Unit) -> Unit,
     onSaveSettings: (String, String, String) -> Unit,
     onPhoneAction: (String) -> Unit,
     onSpeak: (String) -> Unit,
@@ -103,7 +103,7 @@ fun DashboardScreen(
                             IconButton(onClick = onMicPress) { Icon(Icons.Default.Mic, "Ses", tint = JarvisCyan) }
                             IconButton(onClick = {
                                 val q = message.trim()
-                                if (q.isNotEmpty()) { chat.add(ChatLine("user", q)); message = ""; onSendPress(q) }
+                                if (q.isNotEmpty()) { chat.add(ChatLine("user", q)); message = ""; onSendPress(q) { reply -> chat.add(ChatLine("assistant", reply)) } }
                             }) { Icon(Icons.Default.Send, "Gönder", tint = JarvisCyan) }
                         }
                         Text("Saat: ${TimeUtils.nowFormatted()}", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
