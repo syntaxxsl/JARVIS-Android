@@ -1,5 +1,6 @@
 package com.jarvis.assistant.core.ai
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -29,6 +30,8 @@ object JarvisAiClient {
         if (primaryKey.isNotBlank()) {
             try {
                 return chat(primaryKey, primaryModel, messages, primaryUrl)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 primaryError = e
             }
@@ -37,6 +40,8 @@ object JarvisAiClient {
             try {
                 val response = chat(backupKey, backupModel, messages, backupUrl)
                 return "Yedek AI sağlayıcısına otomatik geçiş yapıldı.\n\n$response"
+            } catch (backupError: CancellationException) {
+                throw backupError
             } catch (backupError: Exception) {
                 val first = primaryError?.message ?: "Birincil sağlayıcı anahtarı ayarlanmamış."
                 throw IllegalStateException("Birincil sağlayıcı: $first\nYedek sağlayıcı: ${backupError.message ?: "bağlantı hatası"}")
