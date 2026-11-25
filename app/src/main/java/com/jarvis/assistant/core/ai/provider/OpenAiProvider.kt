@@ -12,11 +12,11 @@ import com.jarvis.assistant.core.network.dto.openai.OpenAiMessageDto
 
 class OpenAiProvider(
     private val service: OpenAiService,
-    private val type: AiProviderType,
+    private val providerType: AiProviderType,
     private val apiKey: String,
     private val baseUrl: String
 ) : AiProvider {
-    override val type: AiProviderType = type
+    override val type: AiProviderType = providerType
 
     override suspend fun chat(request: AiRequest): Result<AiResponse> {
         return try {
@@ -29,7 +29,7 @@ class OpenAiProvider(
             val res = service.chat(dto)
             val content = res.choices?.firstOrNull()?.message?.content
                 ?: return Result.Failure(AppError.Unknown("Boş yanıt"))
-            Result.Success(AiResponse(content, type.id, request.model))
+            Result.Success(AiResponse(content, providerType.id, request.model))
         } catch (e: Exception) {
             Result.Failure(AppError.Network(e.message ?: "Ağ hatası"))
         }
