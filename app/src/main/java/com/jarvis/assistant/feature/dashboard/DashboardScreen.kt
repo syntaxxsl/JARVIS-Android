@@ -7,6 +7,10 @@ import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.os.StatFs
 import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.jarvis.assistant.core.documents.DocumentAnalyzer
+import kotlinx.coroutines.launch
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -171,6 +175,9 @@ fun DashboardScreen(
                                     }
                                 }
                                 item {
+                                    MiniModule("PDF / OCR ANALİZİ", Icons.Default.DocumentScanner, Modifier.fillMaxWidth()) { page = "documents" }
+                                }
+                                item {
                                     HudCard {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(Icons.Default.Timeline, null, tint = JarvisCyan)
@@ -238,6 +245,48 @@ fun DashboardScreen(
                                         else -> "Yaratıcı ajan olarak fikirler üret: "
                                     }
                                     page = "chat"
+                                }
+                            }
+                        }
+                        "documents" -> {
+                            val context = LocalContext.current
+                            val scope = rememberCoroutineScope()
+                            var analysis by rememberSaveable { mutableStateOf("Bir PDF veya görsel seç. JARVIS sayfaları/metni OCR ile okuyup çıkarabilir.") }
+                            var isAnalyzing by remember { mutableStateOf(false) }
+                            val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                                if (uri != null) {
+                                    runCatching { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+                                    isAnalyzing = true
+                                    analysis = "Belge inceleniyor..."
+                                    scope.launch {
+                                        analysis = runCatching { DocumentAnalyzer.analyze(context, uri) }
+                                            .getOrElse { "Belge okunamadı: ${it.message ?: "bilinmeyen hata"}" }
+                                        isAnalyzing = false
+                                    }
+                                }
+                            }
+                            LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                item { SectionHeading("BELGE ZEKÂSI", "PDF ve görsel metin analizi") }
+                                item {
+                                    HudCard {
+                                        Text("OCR MOTORU", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                                        Text("Görsellerdeki ve PDF sayfalarındaki yazıları cihaz üzerinde tanımaya çalışır. PDF işlemi performans için ilk 8 sayfayla sınırlıdır.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                        Button(onClick = { picker.launch(arrayOf("image/*", "application/pdf")) }, enabled = !isAnalyzing, modifier = Modifier.fillMaxWidth()) {
+                                            Icon(Icons.Default.FileOpen, null); Spacer(Modifier.width(8.dp)); Text("PDF veya görsel seç")
+                                        }
+                                        if (isAnalyzing) LinearProgressIndicator(Modifier.fillMaxWidth(), color = JarvisCyan)
+                                    }
+                                }
+                                item {
+                                    HudCard {
+                                        Text("ÇIKARILAN METİN", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                                        Text(analysis, color = JarvisText)
+                                    }
+                                }
+                                item {
+                                    OutlinedButton(onClick = { analysis = "Bir PDF veya görsel seç. JARVIS sayfaları/metni OCR ile okuyup çıkarabilir." }, modifier = Modifier.fillMaxWidth()) {
+                                        Icon(Icons.Default.DeleteSweep, null); Text("Sonucu temizle")
+                                    }
                                 }
                             }
                         }
