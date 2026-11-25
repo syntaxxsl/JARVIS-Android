@@ -96,9 +96,8 @@ fun DashboardScreen(
             val tabs = listOf(
                 Triple("home", "MERKEZ", Icons.Default.Dashboard),
                 Triple("chat", "SOHBET", Icons.Default.Chat),
-                Triple("agents", "AJANLAR", Icons.Default.Hub),
-                Triple("phone", "TELEFON", Icons.Default.Smartphone),
-                Triple("control", "KONTROL", Icons.Default.Tune)
+                Triple("control", "CİHAZ", Icons.Default.Tune),
+                Triple("modules", "MENÜ", Icons.Default.GridView)
             )
             Box(
                 Modifier.fillMaxWidth()
@@ -488,6 +487,16 @@ fun DashboardScreen(
                                     }
                                 }
                             }
+                        }
+                        "modules" -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                            item { SectionHeading("JARVIS MODÜLLERİ", "Tüm yetenekler tek bir yerde") }
+                            item { QuickCard("Uzman ajanlar", "Araştırma, yazılım, belge, öğrenme ve yaratıcı ajanlar", Icons.Default.Hub) { page = "agents" } }
+                            item { QuickCard("Telefon ve uygulamalar", "Uygulama başlatma, ekran etkileşimi ve sistem erişimi", Icons.Default.Smartphone) { page = "phone" } }
+                            item { QuickCard("Bildirim merkezi", "İzin verilen bildirimleri görüntüle ve yanıt taslağı hazırla", Icons.Default.Notifications) { page = "notifications" } }
+                            item { QuickCard("Kişisel hafıza", "Cihazda saklanan notları görüntüle ve yönet", Icons.Default.Psychology) { page = "memory" } }
+                            item { QuickCard("Belge zekâsı", "PDF ve görsellerden metin çıkar", Icons.Default.DocumentScanner) { page = "documents" } }
+                            item { QuickCard("AI yönlendirici", "Birincil ve yedek AI sağlayıcılarını yapılandır", Icons.Default.AccountTree) { page = "router" } }
+                            item { QuickCard("Kontrol merkezi", "Sistem izinleri ve cihaz kontrolleri", Icons.Default.Tune) { page = "control" } }
                         }
                         "router" -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             item { SectionHeading("JARVIS CONTROL", "AI yönlendirici ve sistem yönetimi") }
