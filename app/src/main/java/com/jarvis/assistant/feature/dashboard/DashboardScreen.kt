@@ -423,6 +423,35 @@ fun DashboardScreen(
                                     MiniModule("SES", Icons.Default.VolumeUp, Modifier.weight(1f)) { onPhoneAction("sound") }
                                 }
                             }
+                            item { SectionHeading("DOĞRUDAN KONTROLLER", "İzin verildiğinde ayarı JARVIS değiştirir") }
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    MiniModule("SES +", Icons.Default.VolumeUp, Modifier.weight(1f)) { onPhoneAction("volume_up") }
+                                    MiniModule("SES −", Icons.Default.VolumeDown, Modifier.weight(1f)) { onPhoneAction("volume_down") }
+                                    MiniModule("SESSİZ", Icons.Default.VolumeOff, Modifier.weight(1f)) { onPhoneAction("volume_mute") }
+                                }
+                            }
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    MiniModule("PARLAKLIK +", Icons.Default.BrightnessHigh, Modifier.weight(1f)) { onPhoneAction("brightness_up") }
+                                    MiniModule("PARLAKLIK −", Icons.Default.BrightnessLow, Modifier.weight(1f)) { onPhoneAction("brightness_down") }
+                                }
+                            }
+                            item {
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    MiniModule("RAHATSIZ ETME", Icons.Default.DoNotDisturbOn, Modifier.weight(1f)) { onPhoneAction("dnd") }
+                                    MiniModule("30 SN EKRAN", Icons.Default.Timer, Modifier.weight(1f)) { onPhoneAction("timeout_30") }
+                                    MiniModule("2 DK EKRAN", Icons.Default.Schedule, Modifier.weight(1f)) { onPhoneAction("timeout_120") }
+                                }
+                            }
+                            item {
+                                HudCard {
+                                    Text("ÖZEL ANDROID İZİNLERİ", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                                    Text("Parlaklık ve ekran zaman aşımı için sistem ayarlarını değiştirme; Rahatsız Etmeyin için bildirim politikası erişimi gerekir. Android izin ekranını açar, izni sen verirsin.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                    OutlinedButton(onClick = { onPhoneAction("write_settings") }, modifier = Modifier.fillMaxWidth()) { Text("Sistem ayarlarını değiştirme izni") }
+                                    OutlinedButton(onClick = { onPhoneAction("dnd_access") }, modifier = Modifier.fillMaxWidth()) { Text("Rahatsız Etmeyin erişimi") }
+                                }
+                            }
                             item {
                                 Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                                     MiniModule("PİL", Icons.Default.BatteryChargingFull, Modifier.weight(1f)) { onPhoneAction("battery") }
