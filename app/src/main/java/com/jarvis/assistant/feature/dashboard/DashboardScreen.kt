@@ -1,5 +1,13 @@
 package com.jarvis.assistant.feature.dashboard
 
+import android.app.ActivityManager
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.BatteryManager
+import android.os.StatFs
+import androidx.compose.ui.platform.LocalContext
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -40,6 +48,8 @@ fun DashboardScreen(
     initialApiKey: String, initialModel: String, initialBaseUrl: String,
     initialBackupApiKey: String, initialBackupModel: String, initialBackupBaseUrl: String,
     memoryItems: List<String>, taskItems: List<String>,
+    chatItems: List<Pair<String, String>>,
+    onNewChat: () -> Unit,
     onAddMemory: (String) -> Unit, onAddTask: (String) -> Unit,
     onMicPress: () -> Unit,
     onSendPress: (String, (String) -> Unit) -> Unit,
@@ -58,7 +68,12 @@ fun DashboardScreen(
     var backupUrl by rememberSaveable { mutableStateOf(initialBackupBaseUrl) }
     var memoryText by rememberSaveable { mutableStateOf("") }
     var taskText by rememberSaveable { mutableStateOf("") }
-    val chat = remember { mutableStateListOf(ChatLine("assistant", "Merhaba. Ben JARVIS. Yerel sistemler hazır. Nasıl yardımcı olabilirim?")) }
+    val chat = remember { mutableStateListOf<ChatLine>() }
+    LaunchedEffect(chatItems) {
+        chat.clear()
+        chat.addAll(chatItems.map { ChatLine(it.first, it.second) })
+        if (chat.isEmpty()) chat.add(ChatLine("assistant", "Merhaba. Ben JARVIS. Yerel sistemler hazır. Nasıl yardımcı olabilirim?"))
+    }
     val agents = listOf(
         "Araştırma" to "Bilgi topla, karşılaştır ve özetle",
         "Yazılım Geliştirici" to "Kod yaz, hata ayıkla ve mimari tasarla",
@@ -134,6 +149,7 @@ fun DashboardScreen(
                                     Text(TimeUtils.nowFormatted() + "  •  Çevrimdışı temel modül aktif", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
                                 }
                                 item { ReactorPanel(onMicPress) }
+                                item { LiveDeviceStatusCard() }
                                 item {
                                     Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                                         StatCard("HAFIZA", memoryItems.size.toString(), Icons.Default.Psychology, Modifier.weight(1f)) { page = "memory" }
@@ -177,7 +193,7 @@ fun DashboardScreen(
                                     Text("API yoksa temel yerel komutlar", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
                                 }
                                 IconButton(onClick = onStopSpeaking) { Icon(Icons.Default.StopCircle, "Sesi durdur", tint = JarvisCyan) }
-                                TextButton(onClick = { chat.clear(); chat.add(ChatLine("assistant", "Yeni sohbet başlatıldı.")) }) { Text("Yeni") }
+                                TextButton(onClick = { chat.clear(); onNewChat(); chat.add(ChatLine("assistant", "Yeni sohbet başlatıldı.")) }) { Text("Yeni") }
                             }
                             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
                                 items(chat) { line ->
@@ -229,7 +245,8 @@ fun DashboardScreen(
                             val actions = listOf(
                                 "alarm" to "Alarm kur", "wifi" to "Wi-Fi ayarları", "bluetooth" to "Bluetooth",
                                 "sound" to "Ses ayarları", "display" to "Ekran ayarları", "battery" to "Pil tasarrufu",
-                                "apps" to "Uygulama ayarları", "settings" to "Tüm ayarlar"
+                                "apps" to "Uygulama ayarları", "notifications" to "Bildirim erişimi",
+                                "permissions" to "JARVIS izinleri", "location" to "Konum ayarları", "settings" to "Tüm ayarlar"
                             )
                             LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 item { SectionHeading("TELEFON KONTROLÜ", "Android ile güvenli bağlantı") }
@@ -426,4 +443,71 @@ private fun QuickCard(title: String, subtitle: String, icon: androidx.compose.ui
             Icon(Icons.Default.ChevronRight, null, tint = JarvisCyan)
         }
     }
+}
+
+private data class DeviceSnapshot(
+    val battery: Int,
+    val ramUsed: Long,
+    val ramTotal: Long,
+    val storageUsed: Long,
+    val storageTotal: Long,
+    val network: String
+)
+
+@Composable
+private fun LiveDeviceStatusCard() {
+    val context = LocalContext.current
+    var snapshot by remember { mutableStateOf(readDeviceSnapshot(context)) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            snapshot = readDeviceSnapshot(context)
+            kotlinx.coroutines.delay(5000)
+        }
+    }
+    val ramPercent = if (snapshot.ramTotal > 0) (snapshot.ramUsed * 100 / snapshot.ramTotal).toInt() else 0
+    val storagePercent = if (snapshot.storageTotal > 0) (snapshot.storageUsed * 100 / snapshot.storageTotal).toInt() else 0
+    HudCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.MonitorHeart, null, tint = JarvisCyan)
+            Spacer(Modifier.width(9.dp))
+            Text("CANLI CİHAZ TELEMETRİSİ", color = JarvisText, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(12.dp))
+        StatusLine("Pil", "${snapshot.battery.coerceAtLeast(0)}%", snapshot.battery >= 20)
+        StatusLine("Bellek kullanımı", "$ramPercent%", ramPercent < 90)
+        StatusLine("Depolama kullanımı", "$storagePercent%", storagePercent < 90)
+        StatusLine("Ağ bağlantısı", snapshot.network, snapshot.network == "BAĞLI")
+        Text(
+            "RAM: ${formatBytes(snapshot.ramUsed)} / ${formatBytes(snapshot.ramTotal)}   •   Depolama: ${formatBytes(snapshot.storageUsed)} / ${formatBytes(snapshot.storageTotal)}",
+            color = JarvisTextDim,
+            style = MaterialTheme.typography.labelSmall
+        )
+        Text("Veriler bu cihazdan 5 saniyede bir okunur.", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+private fun readDeviceSnapshot(context: Context): DeviceSnapshot {
+    val battery = runCatching {
+        context.getSystemService(BatteryManager::class.java)
+            ?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
+    }.getOrDefault(-1)
+    val memory = ActivityManager.MemoryInfo()
+    runCatching { context.getSystemService(ActivityManager::class.java)?.getMemoryInfo(memory) }
+    val totalRam = memory.totalMem.coerceAtLeast(0L)
+    val usedRam = (totalRam - memory.availMem).coerceAtLeast(0L)
+    val stat = StatFs(context.filesDir.absolutePath)
+    val totalStorage = stat.totalBytes
+    val usedStorage = (totalStorage - stat.availableBytes).coerceAtLeast(0L)
+    val connectivity = context.getSystemService(ConnectivityManager::class.java)
+    val network = connectivity?.activeNetwork
+    val caps = connectivity?.getNetworkCapabilities(network)
+    val connected = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true &&
+        caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    return DeviceSnapshot(battery, usedRam, totalRam, usedStorage, totalStorage, if (connected) "BAĞLI" else "ÇEVRİMDIŞI")
+}
+
+private fun formatBytes(bytes: Long): String {
+    val gb = bytes / (1024.0 * 1024.0 * 1024.0)
+    return if (gb >= 1.0) String.format(java.util.Locale.getDefault(), "%.1f GB", gb)
+    else String.format(java.util.Locale.getDefault(), "%.0f MB", bytes / (1024.0 * 1024.0))
 }
