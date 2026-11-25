@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
                     initialModel = runCatching { prefs.getString("model", "openrouter/free").orEmpty() }.getOrDefault("openrouter/free"),
                     initialBaseUrl = runCatching { prefs.getString("base_url", "https://openrouter.ai/api/v1").orEmpty() }.getOrDefault("https://openrouter.ai/api/v1"),
                     onMicPress = { startSpeech() },
-                    onSendPress = { message -> sendMessage(message) {} },
+                    onSendPress = { message, onReply -> sendMessage(message, onReply) },
                     onSaveSettings = { key, model, url ->
                         runCatching {
                             prefs.edit().putString("api_key", key.trim()).putString("model", model.trim())
@@ -91,7 +91,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun sendMessage(message: String, ignored: () -> Unit) {
+    private fun sendMessage(message: String, onReply: (String) -> Unit) {
         val clean = message.trim()
         if (clean.isBlank()) return
         history.add("user" to clean)
@@ -109,13 +109,10 @@ class MainActivity : ComponentActivity() {
                 else "\n\nAI bağlantı notu: ${e.message ?: "bağlantı hatası"}"
             }
             history.add("assistant" to reply)
-            (window.decorView.rootView.tag as? ((String, String) -> Unit))?.invoke(clean, reply)
-            // The UI observes responses through the activity callback below.
-            responseCallback?.invoke(clean, reply)
+            onReply(reply)
         }
     }
 
-    private var responseCallback: ((String, String) -> Unit)? = null
 
     private fun offlineReply(command: String): String {
         val q = command.lowercase()
