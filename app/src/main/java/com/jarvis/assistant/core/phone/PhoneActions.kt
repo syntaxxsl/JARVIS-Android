@@ -51,11 +51,15 @@ object PhoneActions {
                         "Ekran zaman aşımı güncellendi."
                     }
                 }
-                "dnd" -> {
+                "dnd", "dnd_on", "dnd_off" -> {
                     val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && manager.isNotificationPolicyAccessGranted) {
-                        val next = if (manager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_NONE)
-                            NotificationManager.INTERRUPTION_FILTER_ALL else NotificationManager.INTERRUPTION_FILTER_NONE
+                        val next = when (action) {
+                            "dnd_on" -> NotificationManager.INTERRUPTION_FILTER_NONE
+                            "dnd_off" -> NotificationManager.INTERRUPTION_FILTER_ALL
+                            else -> if (manager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_NONE)
+                                NotificationManager.INTERRUPTION_FILTER_ALL else NotificationManager.INTERRUPTION_FILTER_NONE
+                        }
                         manager.setInterruptionFilter(next)
                         if (next == NotificationManager.INTERRUPTION_FILTER_NONE) "Rahatsız Etmeyin etkinleştirildi." else "Rahatsız Etmeyin kapatıldı."
                     } else {
