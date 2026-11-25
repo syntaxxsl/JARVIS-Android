@@ -15,6 +15,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.jarvis.assistant.core.ai.JarvisAiClient
 import com.jarvis.assistant.core.data.local.AppDatabase
+import com.jarvis.assistant.core.data.local.entity.ChatMessageEntity
 import com.jarvis.assistant.core.data.local.entity.MemoryEntity
 import com.jarvis.assistant.core.data.local.entity.TaskEntity
 import com.jarvis.assistant.core.phone.PhoneActions
@@ -31,6 +32,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var database: AppDatabase
     private val savedMemories = mutableStateListOf<String>()
     private val savedTasks = mutableStateListOf<String>()
+    private val savedChat = mutableStateListOf<Pair<String, String>>()
     private lateinit var ttsMgr: TtsManager
     private val history = mutableListOf<Pair<String, String>>()
     private val prefs by lazy {
@@ -57,6 +59,14 @@ class MainActivity : ComponentActivity() {
                 savedTasks.addAll(rows.map { it.title })
             }
         }
+        lifecycleScope.launch {
+            database.chatMessageDao().observe(DEFAULT_CONVERSATION).collect { rows ->
+                savedChat.clear()
+                savedChat.addAll(rows.map { it.role to it.content })
+                history.clear()
+                history.addAll(rows.map { it.role to it.content })
+            }
+        }
         speechMgr = SpeechRecognizerManager(this)
         ttsMgr = TtsManager(this).also { it.init() }
         lifecycleScope.launch {
@@ -76,6 +86,8 @@ class MainActivity : ComponentActivity() {
                     initialBackupBaseUrl = runCatching { prefs.getString("backup_base_url", "https://api.groq.com/openai/v1").orEmpty() }.getOrDefault("https://api.groq.com/openai/v1"),
                     memoryItems = savedMemories,
                     taskItems = savedTasks,
+                    chatItems = savedChat,
+                    onNewChat = { lifecycleScope.launch { database.chatMessageDao().deleteConversation(DEFAULT_CONVERSATION) } },
                     onAddMemory = { value -> lifecycleScope.launch { database.memoryDao().insert(MemoryEntity(content = value)) } },
                     onAddTask = { value -> lifecycleScope.launch { database.taskDao().insert(TaskEntity(title = value)) } },
                     onMicPress = { startSpeech() },
@@ -126,8 +138,9 @@ class MainActivity : ComponentActivity() {
     private fun sendMessage(message: String, onReply: (String) -> Unit) {
         val clean = message.trim()
         if (clean.isBlank()) return
-        history.add("user" to clean)
         lifecycleScope.launch {
+            database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "user", content = clean))
+            val currentHistory = history.toList() + ("user" to clean)
             val reply = try {
                 JarvisAiClient.chatWithFallback(
                     primaryKey = prefs.getString("api_key", "").orEmpty(),
@@ -136,14 +149,14 @@ class MainActivity : ComponentActivity() {
                     backupKey = prefs.getString("backup_api_key", "").orEmpty(),
                     backupModel = prefs.getString("backup_model", "llama-3.3-70b-versatile").orEmpty(),
                     backupUrl = prefs.getString("backup_base_url", "https://api.groq.com/openai/v1").orEmpty(),
-                    messages = history.toList()
+                    messages = currentHistory
                 )
             } catch (e: Exception) {
                 offlineReply(clean) + if (prefs.getString("api_key", "").isNullOrBlank())
                     "\n\nOnline AI için Kontrol bölümünden birincil veya yedek sağlayıcı anahtarı ekleyebilirsin."
                 else "\n\nAI bağlantı notu: ${e.message ?: "bağlantı hatası"}"
             }
-            history.add("assistant" to reply)
+            database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "assistant", content = reply))
             onReply(reply)
         }
     }
@@ -170,5 +183,8 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    companion object { private const val REQUEST_AUDIO_PERMISSION = 101 }
+    companion object {
+        private const val REQUEST_AUDIO_PERMISSION = 101
+        private const val DEFAULT_CONVERSATION = "default"
+    }
 }
