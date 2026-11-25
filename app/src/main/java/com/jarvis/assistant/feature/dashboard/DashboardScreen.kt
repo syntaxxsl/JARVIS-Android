@@ -72,7 +72,6 @@ fun DashboardScreen(
     var backupModel by rememberSaveable { mutableStateOf(initialBackupModel) }
     var backupUrl by rememberSaveable { mutableStateOf(initialBackupBaseUrl) }
     var memoryText by rememberSaveable { mutableStateOf("") }
-    var taskText by rememberSaveable { mutableStateOf("") }
     val chat = remember { mutableStateListOf<ChatLine>() }
     LaunchedEffect(chatItems) {
         chat.clear()
@@ -82,7 +81,7 @@ fun DashboardScreen(
     val agents = listOf(
         "Araştırma" to "Bilgi topla, karşılaştır ve özetle",
         "Yazılım Geliştirici" to "Kod yaz, hata ayıkla ve mimari tasarla",
-        "Planlayıcı" to "Hedeflerini uygulanabilir görevlere böl",
+        "Belge Analisti" to "PDF ve görsellerdeki metinleri analiz et",
         "Telefon Asistanı" to "İzinli Android işlemlerini planla",
         "Öğrenme Koçu" to "Konuları seviyene göre öğret",
         "Yaratıcı" to "Özgün fikirler ve konseptler üret"
@@ -158,7 +157,6 @@ fun DashboardScreen(
                                 item {
                                     Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                                         StatCard("HAFIZA", memoryItems.size.toString(), Icons.Default.Psychology, Modifier.weight(1f)) { page = "memory" }
-                                        StatCard("GÖREV", taskItems.size.toString(), Icons.Default.TaskAlt, Modifier.weight(1f)) { page = "control" }
                                         StatCard("AJAN", "06", Icons.Default.Hub, Modifier.weight(1f)) { page = "agents" }
                                     }
                                 }
@@ -240,7 +238,7 @@ fun DashboardScreen(
                                     message = when (name) {
                                         "Araştırma" -> "Araştırma ajanı olarak konuyu kaynaklarıyla analiz et: "
                                         "Yazılım Geliştirici" -> "Yazılım geliştirici olarak kodu ve testleri hazırla: "
-                                        "Planlayıcı" -> "Planlayıcı olarak hedefimi adımlara böl: "
+                                        "Belge Analisti" -> "Belge analisti olarak bu içeriği incele: "
                                         "Telefon Asistanı" -> "Telefon asistanı olarak izinli Android görevini planla: "
                                         "Öğrenme Koçu" -> "Öğrenme koçu olarak konuyu basitçe öğret: "
                                         else -> "Yaratıcı ajan olarak fikirler üret: "
@@ -411,13 +409,6 @@ fun DashboardScreen(
                             }
                             item { Text("Anahtarlar cihazdaki şifreli tercihler alanında saklanır. Kota bilgisi servis sağlayıcıdan gelmediği sürece tahmin edilmez.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall) }
                             item { Divider(color = JarvisCyan.copy(alpha = .22f)) }
-                            item { Text("GÖREV YÖNETİMİ", color = JarvisCyan, fontWeight = FontWeight.Bold) }
-                            item { OutlinedTextField(taskText, { taskText = it }, Modifier.fillMaxWidth(), label = { Text("Yeni görev") }) }
-                            item { Button(onClick = { if (taskText.isNotBlank()) { onAddTask(taskText.trim()); taskText = "" } }, Modifier.fillMaxWidth()) {
-                                Icon(Icons.Default.AddTask, null); Text("Görev ekle")
-                            } }
-                            if (taskItems.isEmpty()) item { EmptyState("Görev listesi boş", "Yapılacaklarını buradan takip edebilirsin.") }
-                            items(taskItems) { Text("•  $it", color = JarvisText, modifier = Modifier.fillMaxWidth().background(JarvisPanel, RoundedCornerShape(12.dp)).padding(13.dp)) }
                             item { OutlinedButton(onClick = onStopSpeaking, Modifier.fillMaxWidth()) { Icon(Icons.Default.Stop, null); Text("Sesli yanıtı durdur") } }
                         }
                     }
