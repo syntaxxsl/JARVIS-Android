@@ -21,6 +21,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -90,26 +91,40 @@ fun DashboardScreen(
     Scaffold(
         containerColor = JarvisBgDeep,
         bottomBar = {
-            NavigationBar(containerColor = JarvisPanel, tonalElevation = 0.dp) {
-                val tabs = listOf(
-                    Triple("home", "Merkez", Icons.Default.Dashboard),
-                    Triple("chat", "Sohbet", Icons.Default.Chat),
-                    Triple("agents", "Ajanlar", Icons.Default.Hub),
-                    Triple("phone", "Telefon", Icons.Default.Smartphone),
-                    Triple("control", "Kontrol", Icons.Default.Tune)
-                )
-                tabs.forEach { (id, label, icon) ->
-                    NavigationBarItem(
-                        selected = page == id || (id == "memory" && page == "control"),
-                        onClick = { page = id },
-                        icon = { Icon(icon, label) },
-                        label = { Text(label) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = JarvisCyan, selectedTextColor = JarvisCyan,
-                            indicatorColor = JarvisCyan.copy(alpha = .14f),
-                            unselectedIconColor = JarvisTextDim, unselectedTextColor = JarvisTextDim
-                        )
-                    )
+            val tabs = listOf(
+                Triple("home", "MERKEZ", Icons.Default.Dashboard),
+                Triple("chat", "SOHBET", Icons.Default.Chat),
+                Triple("agents", "AJANLAR", Icons.Default.Hub),
+                Triple("phone", "TELEFON", Icons.Default.Smartphone),
+                Triple("control", "KONTROL", Icons.Default.Tune)
+            )
+            Box(
+                Modifier.fillMaxWidth()
+                    .background(Brush.verticalGradient(listOf(JarvisBgDeep.copy(alpha = .2f), JarvisBgDeep)))
+                    .padding(horizontal = 12.dp, vertical = 9.dp)
+            ) {
+                Row(
+                    Modifier.fillMaxWidth()
+                        .clip(RoundedCornerShape(23.dp))
+                        .background(Brush.horizontalGradient(listOf(JarvisPanel, JarvisAccent.copy(alpha = .20f), JarvisPanel)))
+                        .border(1.dp, JarvisCyan.copy(alpha = .32f), RoundedCornerShape(23.dp))
+                        .padding(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    tabs.forEach { (id, label, icon) ->
+                        val selected = page == id
+                        Column(
+                            Modifier.weight(1f).clip(RoundedCornerShape(16.dp))
+                                .background(if (selected) JarvisCyan.copy(alpha = .16f) else JarvisPanel.copy(alpha = .3f))
+                                .clickable { page = id }
+                                .padding(vertical = 9.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Icon(icon, label, tint = if (selected) JarvisCyan else JarvisTextDim, modifier = Modifier.size(21.dp))
+                            Text(label, color = if (selected) JarvisCyan else JarvisTextDim, style = MaterialTheme.typography.labelSmall, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+                        }
+                    }
                 }
             }
         }
