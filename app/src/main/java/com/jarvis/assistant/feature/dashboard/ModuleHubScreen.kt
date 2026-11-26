@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhonelinkSetup
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Tune
@@ -57,6 +58,7 @@ fun ModuleHubScreen(onNavigate: (String) -> Unit) {
             HubEntry("Neural Chat", "JARVIS ile metin ve sesli sohbet", Icons.Default.Forum, "chat"),
             HubEntry("Uzman ajanlar", "Araştırma, yazılım, öğrenme ve yaratıcı", Icons.Default.Hub, "agents"),
             HubEntry("Mission Control", "Hedefleri parçalara ayır ve adım adım yürüt", Icons.Default.AccountTree, "mission"),
+            HubEntry("Research Studio", "Wikipedia ve akademik yayın metaverisinde kaynaklı araştırma", Icons.Default.Science, "research"),
             HubEntry("AI Router", "Birincil/yedek sağlayıcı, model kataloğu ve test", Icons.Default.AccountTree, "router")
         )),
         HubGroup("02  /  BİLGİ & HAFIZA", "Belgeler, kişisel hafıza ve yerel arama", listOf(
