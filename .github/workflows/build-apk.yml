@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -49,3 +49,15 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
+
+      - name: Publish APK version archive
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: jarvis-build-${{ github.run_number }}
+          name: JARVIS Android build #${{ github.run_number }}
+          body: |
+            Automated debug APK archive for commit ${{ github.sha }}.
+            Install manually. Android may require uninstalling a differently signed debug build first.
+          files: app/build/outputs/apk/debug/app-debug.apk
+          prerelease: true
+          make_latest: false
