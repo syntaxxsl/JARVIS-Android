@@ -33,7 +33,16 @@ class SpeechRecognizerManager(private val context: Context) {
                 override fun onEndOfSpeech() { _isListening.value = false }
                 override fun onError(error: Int) {
                     _isListening.value = false
-                    _error.value = "Ses tanıma hatası: $error"
+                    _error.value = when (error) {
+                        SpeechRecognizer.ERROR_AUDIO -> "Mikrofon sesi alınamadı."
+                        SpeechRecognizer.ERROR_CLIENT -> "Ses tanıma isteği iptal edildi."
+                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Mikrofon izni gerekli."
+                        SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Ses tanıma servisine ağ bağlantısı kurulamadı."
+                        SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Konuşma algılanamadı. Tekrar dene."
+                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Ses tanıma meşgul. Biraz sonra tekrar dene."
+                        SpeechRecognizer.ERROR_SERVER -> "Ses tanıma sunucusu hata verdi."
+                        else -> "Ses tanıma hatası ($error)."
+                    }
                 }
                 override fun onResults(results: android.os.Bundle?) {
                     val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -55,12 +64,17 @@ class SpeechRecognizerManager(private val context: Context) {
         }
         _error.value = null
         _result.value = null
-        recognizer?.startListening(intent)
-        _isListening.value = true
+        runCatching {
+            recognizer?.startListening(intent)
+            _isListening.value = true
+        }.onFailure { error ->
+            _isListening.value = false
+            _error.value = "Mikrofon başlatılamadı: ${error.message ?: "Android hatası"}"
+        }
     }
 
     fun stopListening() {
-        recognizer?.stopListening()
+        runCatching { recognizer?.stopListening() }
         _isListening.value = false
     }
 
