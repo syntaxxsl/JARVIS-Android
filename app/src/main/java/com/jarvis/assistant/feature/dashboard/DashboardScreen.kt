@@ -63,6 +63,7 @@ fun DashboardScreen(
     onMicPress: () -> Unit,
     onSendPress: (String, (String) -> Unit) -> Unit,
     onSaveSettings: (String, String, String, String, String, String) -> Unit,
+    onTestAiConnection: (String, String, String, String, String, String, (Boolean, String) -> Unit) -> Unit,
     onPhoneAction: (String) -> Unit,
     onSpeak: (String) -> Unit,
     onStopSpeaking: () -> Unit
@@ -553,10 +554,10 @@ fun DashboardScreen(
                                     Icon(Icons.Default.Security, null); Spacer(Modifier.width(8.dp)); Text("Tüm AI ayarlarını güvenli kaydet")
                                 }
                                 OutlinedButton(onClick = {
-                                    apiTestStatus = "Bağlantı test ediliyor..."
-                                    onSendPress("JARVIS API bağlantı testi. Yalnızca 'Bağlantı başarılı.' yaz.", { result ->
-                                        apiTestStatus = if (result.contains("başarılı", true)) "Bağlantı yanıtı alındı: başarılı." else "Yanıt alındı fakat test mesajı beklenen ifadeyi içermiyor: " + result.take(150)
-                                    })
+                                    apiTestStatus = "Girilen sağlayıcı ayarlarıyla doğrudan bağlantı deneniyor..."
+                                    onTestAiConnection(apiKey, model, baseUrl, backupKey, backupModel, backupUrl) { success, detail ->
+                                        apiTestStatus = if (success) "BAĞLANTI BAŞARILI • $detail" else "BAĞLANTI BAŞARISIZ • $detail"
+                                    }
                                 }, modifier = Modifier.fillMaxWidth()) {
                                     Icon(Icons.Default.NetworkCheck, null); Spacer(Modifier.width(8.dp)); Text("AI bağlantısını test et")
                                 }
