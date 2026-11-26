@@ -8,6 +8,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import com.jarvis.assistant.core.ui.theme.JarvisCyan
@@ -123,7 +124,7 @@ fun RemoteUpdatePanel() {
     var pending by remember { mutableStateOf<RemoteConfigStore.Config?>(null) }
     var currentVersion by remember { mutableIntStateOf(RemoteConfigStore.activeVersion(context)) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(androidx.compose.ui.unit.dp(8))) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("LIVE UPDATE // OTA", color = JarvisCyan, fontWeight = FontWeight.Bold)
         Text("Arayüz/AI davranış yapılandırması APK yüklemeden güncellenebilir. Kotlin/Android yerel kodu değişiklikleri yine yeni APK gerektirir.", color = JarvisTextDim)
         Text("Etkin yapılandırma: v$currentVersion", color = JarvisText)
