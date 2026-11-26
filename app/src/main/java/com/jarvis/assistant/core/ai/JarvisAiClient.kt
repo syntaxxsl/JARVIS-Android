@@ -64,7 +64,7 @@ object JarvisAiClient {
             ?: throw IllegalArgumentException("Geçerli bir API adresi gir.")
         val secureRemote = parsedUrl.scheme.equals("https", ignoreCase = true)
         val localLoopback = parsedUrl.scheme.equals("http", ignoreCase = true) &&
-            parsedUrl.host?.lowercase() in setOf("localhost", "127.0.0.1", "::1")
+            parsedUrl.host?.lowercase() in setOf("localhost", "127.0.0.1")
         require(secureRemote || localLoopback) {
             "Uzak API adresleri HTTPS kullanmalı. HTTP yalnızca bu cihazdaki localhost servisi için açıktır."
         }
@@ -136,7 +136,16 @@ object JarvisAiClient {
         val array = JSONArray()
         array.put(JSONObject().put("role", "system").put("content",
             "Sen JARVIS'sin: Türkçe konuşan, sakin, profesyonel ve dikkatli bir Android kişisel asistansın. Önce isteği ve bağlamı sınıflandır; karmaşık işleri küçük adımlara ayır; verilen yerel belge alıntılarını yalnızca destekledikleri iddialar için kullan. Güncel web erişimin yoksa güncel bilgiye eriştiğini iddia etme. Kaynak, tarih, sürüm veya teknik ayrıntı uydurma; belirsizliği açıkça belirt. Birden fazla makul çözüm varsa artı-eksi yönlerini karşılaştır ve en güvenli uygulanabilir yolu öner. Kod verirken mevcut proje mimarisine uy, hataları ve kenar durumlarını kontrol et. Kullanıcı onayı olmadan harici işlem yaptığını iddia etme."))
-        messages.takeLast(24).forEach { (role, content) ->
+        var remainingContextChars = 18_000
+        val selectedMessages = mutableListOf<Pair<String, String>>()
+        messages.takeLast(24).asReversed().forEach { (role, content) ->
+            if (remainingContextChars > 0) {
+                val bounded = content.take(remainingContextChars)
+                if (bounded.isNotBlank()) selectedMessages.add(role to bounded)
+                remainingContextChars -= bounded.length
+            }
+        }
+        selectedMessages.asReversed().forEach { (role, content) ->
             array.put(JSONObject().put("role", role).put("content", content))
         }
         val payload = JSONObject()
