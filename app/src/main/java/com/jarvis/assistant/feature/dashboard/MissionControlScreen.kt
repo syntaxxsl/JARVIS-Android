@@ -168,7 +168,7 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
         if (planning || executing) item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = JarvisCyan) }
         if (steps.isNotEmpty()) {
             item {
-                HudCard {
+                MissionHudCard {
                     Text("GÖREV PLANI", color = JarvisCyan, fontWeight = FontWeight.Bold)
                     Text(status, color = JarvisTextDim)
                     steps.forEachIndexed { index, step ->
@@ -178,7 +178,7 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
                             colors = CardDefaults.cardColors(containerColor = JarvisPanel)
                         ) {
                             Column(Modifier.padding(12.dp)) {
-                                Text("\${index + 1}. \${step.title}", color = JarvisText, fontWeight = FontWeight.SemiBold)
+                                Text("${index + 1}. ${step.title}", color = JarvisText, fontWeight = FontWeight.SemiBold)
                                 Text(step.state, color = JarvisCyan, fontWeight = FontWeight.Bold)
                                 if (step.result.isNotBlank()) Text(step.result, color = JarvisTextDim)
                             }
@@ -195,9 +195,9 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
                                         if (token != runToken) break
                                         val step = steps[index]
                                         steps[index] = step.copy(state = "ÇALIŞIYOR")
-                                        status = "Adım \${index + 1}/\${steps.size} yürütülüyor..."
+                                        status = "Adım ${index + 1}/${steps.size} yürütülüyor..."
                                         val result = askJarvis(
-                                            "Sen JARVIS görev ajanısın. Genel hedef: $target\nŞu anki alt görev: \${step.title}\nBu adımı gerçekleştirirken yalnızca sahip olduğun bilgi ve metin üretme yeteneğini kullan. Harici araç, dosya, GitHub veya telefon işlemi yaptığını iddia etme. Gereken yerde uygulanabilir sonuç, kod/öneri veya net sınırlama sun. Yanıtını kısa ama yeterince ayrıntılı ver."
+                                            "Sen JARVIS görev ajanısın. Genel hedef: $target\nŞu anki alt görev: ${step.title}\nBu adımı gerçekleştirirken yalnızca sahip olduğun bilgi ve metin üretme yeteneğini kullan. Harici araç, dosya, GitHub veya telefon işlemi yaptığını iddia etme. Gereken yerde uygulanabilir sonuç, kod/öneri veya net sınırlama sun. Yanıtını kısa ama yeterince ayrıntılı ver."
                                         )
                                         if (token != runToken) break
                                         if (result.isNullOrBlank()) {
@@ -208,7 +208,7 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
                                     }
                                     if (token == runToken) {
                                         executing = false
-                                        val summary = steps.joinToString("\n\n") { "\${it.title}\n\${it.state}\n\${it.result}" }
+                                        val summary = steps.joinToString("\n\n") { "${it.title}\n${it.state}\n${it.result}" }
                                         status = "Görev akışı sona erdi. Sonuçları ve sınırlamaları gözden geçir."
                                         saveHistory("HEDEF: $target\nSONUÇ:\n$summary")
                                     }
@@ -225,7 +225,7 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
             }
         }
         if (history.isNotEmpty()) {
-            item { SectionHeading("SON GÖREV KAYITLARI", "Bu cihazda saklanan geçmiş") }
+            item { MissionSectionHeading("SON GÖREV KAYITLARI", "Bu cihazda saklanan geçmiş") }
             itemsIndexed(history.reversed().take(8)) { _, entry ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
