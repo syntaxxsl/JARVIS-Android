@@ -340,7 +340,7 @@ fun DashboardScreen(
                                                 Icon(Icons.Default.Refresh, null); Text("Yenile")
                                             }
                                             OutlinedButton(onClick = {
-                                                context.getSharedPreferences("jarvis_notification_store", Context.MODE_PRIVATE).edit().putString("recent_notifications", "[]").apply()
+                                                com.jarvis.assistant.core.notifications.NotificationStore.clear(context)
                                                 notificationRows = emptyList()
                                             }, modifier = Modifier.weight(1f)) {
                                                 Icon(Icons.Default.DeleteSweep, null); Text("Temizle")
@@ -854,8 +854,7 @@ private data class NotificationItem(
 )
 
 private fun readJarvisNotifications(context: Context): List<NotificationItem> {
-    val raw = context.getSharedPreferences("jarvis_notification_store", Context.MODE_PRIVATE)
-        .getString("recent_notifications", "[]") ?: "[]"
+    val raw = com.jarvis.assistant.core.notifications.NotificationStore.read(context).toString()
     return runCatching {
         val array = org.json.JSONArray(raw)
         (0 until array.length()).mapNotNull { index ->
