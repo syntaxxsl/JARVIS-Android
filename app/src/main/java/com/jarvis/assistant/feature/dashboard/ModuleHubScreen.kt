@@ -58,11 +58,11 @@ fun ModuleHubScreen(onNavigate: (String) -> Unit) {
             HubEntry("Neural Chat", "JARVIS ile metin ve sesli sohbet", Icons.Default.Forum, "chat"),
             HubEntry("Uzman ajanlar", "Araştırma, yazılım, öğrenme ve yaratıcı", Icons.Default.Hub, "agents"),
             HubEntry("Mission Control", "Hedefleri parçalara ayır ve adım adım yürüt", Icons.Default.AccountTree, "mission"),
-            HubEntry("Research Studio", "Wikipedia ve akademik yayın metaverisinde kaynaklı araştırma", Icons.Default.Science, "research"),
+            HubEntry("Research Studio", "4 açık kaynaktan araştırma ve günlük konu takibi", Icons.Default.Science, "research"),
             HubEntry("AI Router", "Birincil/yedek sağlayıcı, model kataloğu ve test", Icons.Default.AccountTree, "router")
         )),
         HubGroup("02  /  BİLGİ & HAFIZA", "Belgeler, kişisel hafıza ve yerel arama", listOf(
-            HubEntry("Knowledge Engine", "PDF, görsel ve metinlerden kişisel bilgi tabanı", Icons.Default.Book, "knowledge"),
+            HubEntry("Knowledge Engine", "Şifreli belge deposu, sıralı arama ve kavram dizini", Icons.Default.Book, "knowledge"),
             HubEntry("Kişisel hafıza", "Cihazda saklanan kayıtları düzenle", Icons.Default.Psychology, "memory"),
             HubEntry("Belge zekâsı", "PDF ve görsellerden OCR ile metin çıkar", Icons.Default.DocumentScanner, "documents")
         )),
@@ -72,7 +72,7 @@ fun ModuleHubScreen(onNavigate: (String) -> Unit) {
             HubEntry("Bildirim merkezi", "Bildirimleri gör ve yanıtı onaylayarak gönder", Icons.Default.Notifications, "notifications")
         )),
         HubGroup("04  /  GELİŞTİRME LABORATUVARI", "Kod inceleme, test ve sürüm takibi", listOf(
-            HubEntry("JARVIS Evolution", "Tanılama, kod inceleme ve Actions geçmişi", Icons.Default.Code, "evolution")
+            HubEntry("JARVIS Evolution", "Kod denetimi, AI düzeltme taslağı ve sürüm geçmişi", Icons.Default.Code, "evolution")
         ))
     )
     val filtered = groups.map { group ->
