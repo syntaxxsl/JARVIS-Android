@@ -265,9 +265,12 @@ class MainActivity : ComponentActivity() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                offlineReply(clean) + if (prefs.getString("api_key", "").isNullOrBlank())
-                    "\n\nOnline AI için Kontrol bölümünden birincil veya yedek sağlayıcı anahtarı ekleyebilirsin."
-                else "\n\nAI bağlantı notu: ${e.message ?: "bağlantı hatası"}"
+                offlineReply(clean) + if (
+                    prefs.getString("api_key", "").isNullOrBlank() &&
+                    prefs.getString("backup_api_key", "").isNullOrBlank()
+                ) {
+                    "\n\nOnline AI için AI Router bölümünden birincil veya yedek sağlayıcı anahtarı ekleyebilirsin."
+                } else "\n\nAI bağlantı notu: ${e.message ?: "bağlantı hatası"}"
             }
             database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "assistant", content = reply))
             onReply(reply)
