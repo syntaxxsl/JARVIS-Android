@@ -97,7 +97,7 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
         item {
             MissionSectionHeading("STARK MISSION CONTROL", "Hedefleri planla ve kontrollü yürüt")
             Text(
-                "JARVIS hedefi en fazla 5 alt göreve böler. Her adım AI üzerinden sırayla çalışır; telefon ayarları, mesaj gönderme veya dosya değiştirme gibi harici işlemler otomatik yapılmaz.",
+                "JARVIS hedefi en fazla 5 alt göreve böler. Planner, görev ve Challenger/Critic aşamaları ayrı uzman rolleriyle aynı yapılandırılmış AI sağlayıcısını kullanır; ayrı modeller veya bağımsız araçlar değildir. Telefon ayarları, mesaj gönderme veya dosya değiştirme gibi harici işlemler otomatik yapılmaz.",
                 color = JarvisTextDim
             )
         }
@@ -168,7 +168,7 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
                             runToken++
                             planning = false
                             executing = false
-                            steps.indices.forEach { index -> if (steps[index].state == "ÇALIŞIYOR") steps[index] = steps[index].copy(state = "DURDURULDU") }
+                            steps.indices.forEach { index -> if (steps[index].state == "ÇALIŞIYOR" || steps[index].state == "UZMAN AJANLAR İNCELİYOR") steps[index] = steps[index].copy(state = "DURDURULDU") }
                             status = "Görev akışı durduruldu. Devam eden yanıt gelse bile sonraki adımlar başlatılmayacak."
                         },
                         enabled = planning || executing
