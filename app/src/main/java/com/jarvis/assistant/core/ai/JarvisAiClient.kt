@@ -12,6 +12,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.net.URI
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -65,7 +66,14 @@ object JarvisAiClient {
         require(apiKey.isNotBlank()) { "Önce AI Router bölümünden API anahtarı gir." }
         require(model.isNotBlank()) { "Seçilen sağlayıcı için model adını gir." }
         val normalized = baseUrl.trim().trimEnd('/')
-        require(normalized.startsWith("https://")) { "API adresi https:// ile başlamalı." }
+        val parsedUrl = runCatching { URI(normalized) }.getOrNull()
+            ?: throw IllegalArgumentException("Geçerli bir API adresi gir.")
+        val secureRemote = parsedUrl.scheme.equals("https", ignoreCase = true)
+        val localLoopback = parsedUrl.scheme.equals("http", ignoreCase = true) &&
+            parsedUrl.host?.lowercase() in setOf("localhost", "127.0.0.1", "::1")
+        require(secureRemote || localLoopback) {
+            "Uzak API adresleri HTTPS kullanmalı. HTTP yalnızca bu cihazdaki localhost servisi için açıktır."
+        }
         val array = JSONArray()
         array.put(JSONObject().put("role", "system").put("content",
             "Sen JARVIS'sin. Türkçe konuşan, sakin, profesyonel, dikkatli bir Android kişisel asistansın. Kullanıcı onayı olmadan harici işlem yaptığını iddia etme. Bilmediğin konuda uydurma."))
