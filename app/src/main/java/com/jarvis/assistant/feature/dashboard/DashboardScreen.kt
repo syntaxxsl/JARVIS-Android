@@ -201,7 +201,7 @@ fun DashboardScreen(
                                     MiniModule("JARVIS EVOLUTION", Icons.Default.AutoAwesome, Modifier.fillMaxWidth()) { page = "evolution" }
                                 }
                                 item {
-                                    MiniModule("MISSION CONTROL", Icons.Default.TrackChanges, Modifier.fillMaxWidth()) { page = "mission" }
+                                    MiniModule("MISSION CONTROL", Icons.Default.AccountTree, Modifier.fillMaxWidth()) { page = "mission" }
                                 }
                                 item {
                                     HudCard {
