@@ -96,10 +96,10 @@ fun DashboardScreen(
         containerColor = JarvisBgDeep,
         bottomBar = {
             val tabs = listOf(
-                Triple("home", "MERKEZ", Icons.Default.Dashboard),
-                Triple("chat", "SOHBET", Icons.Default.Chat),
-                Triple("control", "CİHAZ", Icons.Default.Tune),
-                Triple("modules", "MENÜ", Icons.Default.GridView)
+                Triple("home", "STARK", Icons.Default.Dashboard),
+                Triple("chat", "NEURAL", Icons.Default.Chat),
+                Triple("control", "SİSTEM", Icons.Default.Tune),
+                Triple("modules", "MODÜLLER", Icons.Default.GridView)
             )
             Box(
                 Modifier.fillMaxWidth()
@@ -145,12 +145,12 @@ fun DashboardScreen(
                     }
                     Spacer(Modifier.width(11.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("J.A.R.V.I.S.", color = JarvisText, fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleLarge)
-                        Text("PERSONAL INTELLIGENCE SYSTEM", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                        Text("STARK INDUSTRIES  /  J.A.R.V.I.S.", color = JarvisText, fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleMedium)
+                        Text("MARK VII  •  PERSONAL DEFENSE & INTELLIGENCE", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("● LOCAL CORE", color = JarvisSuccess, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        Text("v1.1 • READY", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                        Text("● ARC CORE ONLINE", color = JarvisSuccess, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("MARK VII  /  READY", color = JarvisCyan, style = MaterialTheme.typography.labelSmall)
                     }
                 }
                 AnimatedContent(
@@ -167,9 +167,9 @@ fun DashboardScreen(
                                 verticalArrangement = Arrangement.spacedBy(15.dp)
                             ) {
                                 item {
-                                    Text("SİSTEME HOŞ GELDİN", color = JarvisCyan, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                    Text("Merkez kontrol", color = JarvisText, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                                    Text(TimeUtils.nowFormatted() + "  •  Çevrimdışı temel modül aktif", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                    Text("STARK INDUSTRIES  //  SECURE INTERFACE", color = JarvisCyan, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    Text("Good evening, Sir.", color = JarvisText, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                                    Text(TimeUtils.nowFormatted() + "  •  ARC REACTOR: ONLINE  •  LOCAL CORE ACTIVE", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
                                 }
                                 item { ReactorPanel(onMicPress) }
                                 item { LiveDeviceStatusCard() }
@@ -214,7 +214,7 @@ fun DashboardScreen(
                         "chat" -> Column(Modifier.fillMaxSize().padding(horizontal = 15.dp)) {
                             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("STARK NEURAL LINK", color = Color(0xFFFFC46B), fontWeight = FontWeight.Bold)
+                                    Text("STARK NEURAL LINK  //  MARK VII", color = Color(0xFFFFC46B), fontWeight = FontWeight.Bold)
                                     Text("API yoksa temel yerel komutlar", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
                                 }
                                 IconButton(onClick = onStopSpeaking) { Icon(Icons.Default.StopCircle, "Sesi durdur", tint = JarvisCyan) }
@@ -317,7 +317,7 @@ fun DashboardScreen(
                             LaunchedEffect(Unit) {
                                 while (true) {
                                     notificationRows = readJarvisNotifications(context)
-                                    kotlinx.coroutines.delay(2500)
+                                    kotlinx.coroutines.delay(6000)
                                 }
                             }
                             LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -325,7 +325,18 @@ fun DashboardScreen(
                                 item {
                                     HudCard {
                                         StatusLine("Bildirim erişimi", if (accessEnabled) "ETKİN" else "İZİN BEKLİYOR", accessEnabled)
-                                        Text("JARVIS yalnızca Android ayarlarından özel erişim verdiğinde bildirim başlığı ve metnini okuyabilir. Kayıtlar cihazında tutulur.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                        Text("JARVIS yalnızca Android ayarlarından özel erişim verdiğinde bildirim başlığı ve metnini okuyabilir. Kayıtlar cihazında tutulur; hassas mesajlar AI sağlayıcısına yalnızca yanıt taslağı istediğinde gönderilir.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            OutlinedButton(onClick = { notificationRows = readJarvisNotifications(context) }, modifier = Modifier.weight(1f)) {
+                                                Icon(Icons.Default.Refresh, null); Text("Yenile")
+                                            }
+                                            OutlinedButton(onClick = {
+                                                context.getSharedPreferences("jarvis_notification_store", Context.MODE_PRIVATE).edit().putString("recent_notifications", "[]").apply()
+                                                notificationRows = emptyList()
+                                            }, modifier = Modifier.weight(1f)) {
+                                                Icon(Icons.Default.DeleteSweep, null); Text("Temizle")
+                                            }
+                                        }
                                         Button(onClick = {
                                             context.startActivity(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
                                         }, modifier = Modifier.fillMaxWidth()) {
@@ -563,8 +574,8 @@ fun DashboardScreen(
                             Icon(Icons.Default.Memory, null, tint = JarvisCyan, modifier = Modifier.size(46.dp))
                         }
                         Text("J.A.R.V.I.S.", color = JarvisText, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-                        Text("ORBIT INTELLIGENCE SYSTEM", color = JarvisCyan, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        Text("SİSTEM BAŞLATILIYOR", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                        Text("STARK INDUSTRIES  •  MARK VII", color = JarvisCyan, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("ARC REACTOR INITIALIZING", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
@@ -615,8 +626,8 @@ private fun ReactorPanel(onMicPress: () -> Unit) {
                     drawCircle(Brush.radialGradient(listOf(JarvisCyan.copy(alpha = .95f), JarvisAccent, JarvisBgDeep), radius = r*.8f), r*.62f)
                     drawCircle(JarvisCyan.copy(alpha = .9f), r*.16f)
                 }
-                Text("J.A.R.V.I.S. CORE", color = JarvisCyan, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
-                Text("YEREL SİSTEM AKTİF  •  AI BAĞLANTISI AYARLANABİLİR", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                Text("ARC REACTOR  //  MARK VII", color = JarvisCyan, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                Text("STARK NEURAL SYSTEM  •  AI ROUTING STANDBY", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
                 Spacer(Modifier.height(14.dp))
                 Button(onClick = onMicPress, colors = ButtonDefaults.buttonColors(containerColor = JarvisCyan, contentColor = JarvisBgDeep), shape = CircleShape) {
                     Icon(Icons.Default.Mic, null); Spacer(Modifier.width(8.dp)); Text("JARVIS İLE KONUŞ")
