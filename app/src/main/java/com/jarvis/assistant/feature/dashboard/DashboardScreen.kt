@@ -520,6 +520,7 @@ fun DashboardScreen(
                             }
                         }
                         "modules" -> ModuleHubScreen(onNavigate = { destination -> page = destination })
+                        "knowledge" -> KnowledgeCenterScreen()
                         "evolution" -> EvolutionCenterScreen(
                             onAskAi = { prompt, onResult -> onSendPress(prompt, onResult) }
                         )
