@@ -521,6 +521,7 @@ fun DashboardScreen(
                         }
                         "modules" -> ModuleHubScreen(onNavigate = { destination -> page = destination })
                         "knowledge" -> KnowledgeCenterScreen()
+                        "research" -> ResearchStudioScreen(onAskAi = { prompt, callback -> onSendPress(prompt, callback) })
                         "evolution" -> EvolutionCenterScreen(
                             onAskAi = { prompt, onResult -> onSendPress(prompt, onResult) }
                         )
