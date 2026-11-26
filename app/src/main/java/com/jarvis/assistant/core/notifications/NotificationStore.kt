@@ -23,8 +23,8 @@ object NotificationStore {
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
 
-    fun read(context: Context): JSONArray {
-        val secure = runCatching { securePreferences(context) }.getOrElse { return JSONArray() }
+    fun read(context: Context): JSONArray = runCatching {
+        val secure = securePreferences(context)
         if (!secure.contains(KEY)) {
             val legacy = context.getSharedPreferences(LEGACY_STORE, Context.MODE_PRIVATE)
             val previous = legacy.getString(KEY, null)
@@ -33,8 +33,8 @@ object NotificationStore {
                 legacy.edit().remove(KEY).commit()
             }
         }
-        return runCatching { JSONArray(secure.getString(KEY, "[]") ?: "[]") }.getOrDefault(JSONArray())
-    }
+        JSONArray(secure.getString(KEY, "[]") ?: "[]")
+    }.getOrDefault(JSONArray())
 
     fun write(context: Context, value: JSONArray) {
         runCatching { securePreferences(context).edit().putString(KEY, value.toString()).apply() }
