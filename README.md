@@ -1,142 +1,99 @@
-# JARVIS - Advanced Personal AI Assistant
+# JARVIS Android
 
-## Proje Özeti
-JARVIS, Iron Man filmindeki karakterine ilham alınan, Android telefonlarda çalışan gelişmiş, modüler ve kişiselleştirilebilir bir yapay zekâ ve telefon asistanı uygulamasıdır.
+JARVIS, Android için Kotlin ve Jetpack Compose ile geliştirilen, Türkçe sesli/metin etkileşimi olan kişisel asistan uygulamasıdır. Arayüz Stark/Iron Man HUD estetiğinden esinlenir.
 
-## Paket Bilgileri
-- **Uygulama Adı**: JARVIS
-- **Paket adı**: com.jarvis.assistant
-- **Dil**: Kotlin
-- **Arayüz**: Jetpack Compose
-- **Tasarım**: Material 3 (Siyah/koyu tema, neon mavi vurgular)
-- **Minimum SDK**: Android 8.0 (API 26)
-- **Target SDK**: En son stabil Android SDK
+## Paket ve derleme
 
-## Mimari
-Uygulama modüler MVVM (Model-View-ViewModel) mimarisi üzerine kurulu aşağıdaki modüllerden oluşur:
+- Paket: `com.jarvis.assistant`
+- Dil: Kotlin
+- Arayüz: Jetpack Compose + Material 3
+- Minimum Android: API 26
+- Compile/Target SDK: 35
+- JDK: 17
+- CI: GitHub Actions
 
-### Core Modüller
-1. **AI Core** - Çoklu AI sağlayıcı desteği (OpenAI, Gemini, OpenRouter, Groq, HuggingFace, Custom OpenAI-compatible, Offline modeller)
-2. **AI Router** - Sağlayıcı yönlendirme ve fallback mekanizması
-3. **Chat Module** - Doğal Türkçe sohbet, konuşma geçmişi, markdown desteği
-4. **Voice Module** - Speech Recognition + Text-to-Speech (Türkçe destek)
-5. **Memory Module** - Room veritabanı ile kalıcı yerel veri saklama
-6. **Agent System** - 6 ajan türü: Research, Developer, Planner, Phone, Learning, Creative
-7. **Phone Automation** - Uygulama kontrolü, ayarlar, Wi-Fi/Bluetooth, alarm, ses/parlaktlık
-8. **Notification Manager** - Bildirim algılama ve yönetim
-9. **File Manager** - Dosya görüntüleme, PDF okuma, OCR, analiz
-10. **Task Manager** - Hatırlatıcılar, alarm, görev takibi, takvim entegrasyonu
-11. **Security Manager** - İzinler, gizlilik kontrolü, API anahtarı yönetimi
-12. **Settings** - DataStore ile ayarlar yönetimi
+GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığını doğrular, test raporunu ve APK artifact'ini yükler ve APK'yı ön sürüm GitHub Release olarak arşivler. CI derlemelerinde `versionCode` ve `versionName` otomatik artırılır. Debug imzalı APK, Play Store dağıtım imzası değildir.
 
-### Teknik Stack
-- **Dil**: Kotlin 2.0.21
-- **UI Toolkit**: Jetpack Compose + Material 3
-- **Veritabanı**: Room (Room veritabanı)
-- **Dependency Injection**: Hilt
-- **Network**: Retrofit + OkHttp
-- **Mimarisi**: MVVM + Repository pattern
-- **Build System**: Gradle Wrapper (v8.9)
+## Gerçekten uygulanmış özellikler
 
-## Özellikler (Mevcut)
+### Sohbet ve AI bağlantısı
+- Metin sohbeti ve Room üzerinde kalıcı sohbet geçmişi.
+- OpenAI uyumlu `/chat/completions` API uç noktasına birincil ve yedek sağlayıcı bağlantısı.
+- OpenRouter, Groq ve Gemini'nin OpenAI uyumlu uç noktaları için hazır adres/model profilleri.
+- Birincil sağlayıcı başarısız olursa yapılandırılmış yedek sağlayıcıya geçiş.
+- Ayar ekranında, henüz kaydedilmemiş form değerleriyle de gerçek API bağlantı testi.
+- API anahtarları Android cihazındaki şifreli SharedPreferences alanında tutulur; istekler HTTPS ile doğrudan sağlayıcıya gider.
 
-### ✅ Çalışan Özellikler
-- **Dashboard Ekranı**: JARVIS ana kontrol merkezi (siyah/koyu tema, neon mavi vurgular)
-- **Mikrofon Girişi**: Ses tanıma desteği (SpeechRecognizer)
-- **Metin Chat**: Sohbet girişi ve yanıt gösterimi
-- **TTS (Text-to-Speech)**: Sesli cevap verme
-- **Temel Offline Komutlar**: saat, tarih, merhaba, alarm
-- **Tema Sistemi**: Açık ve koyu tema geçişleri
-- **Holografik/Animasyon efektleri**: Compose animasyonları
+**Sınırlar:** Bu sürümde OpenAI uyumlu API akışı uygulamanın çalışan sohbet yoludur. Ayrı `AiRouter`, `OpenAiProvider` ve `GeminiProvider` sınıfları tam uygulama akışına bağlanmış çok sağlayıcılı bir DI sistemi değildir. Hugging Face ve yerel LLM bağlantısı henüz tamamlanmamıştır. Ücretsiz kota veya kesintisiz ücretsiz kullanım garantisi yoktur.
 
-### 📁 Proje Yapısı
-```
-app/src/main/java/com/jarvis/assistant/
-├── JarvisApplication.kt        # Hilt Application sınıfı
-├── MainActivity.kt             # Ana aktivite (Dashboard)
-├── feature/
-│   └── dashboard/
-│       └── DashboardScreen.kt  # Dashboard UI
-├── core/
-│   ├── ai/                     # AI sağlayıcı ve router
-│   │   ├── model/              # AiMessage, AiRequest, AiResponse, AiProviderType
-│   │   ├── provider/           # OpenAiProvider, GeminiProvider, OfflineProvider
-│   │   ├── router/             # AiRouter
-│   │   └── offline/            # OfflineCommandHandler
-│   ├── common/                 # Constants, model (Result, UiState), util
-│   │   ├── constants/          # AppConstants, AiConstants
-│   │   ├── model/              # Result<>, UiState<>
-│   │   └── util/               # DispatcherProvider, TimeUtils
-│   ├── ui/                     # Tema (Color, Type, Theme)
-│   ├── voice/                  # SpeechRecognizerManager, TtsManager
-│   ├── data/                   # Room entities, DAO, AppDatabase
-│   │   ├── entity/             # ChatMessageEntity, MemoryEntity, TaskEntity
-│   │   ├── dao/                # ChatMessageDao, MemoryDao, TaskDao
-│   │   └── AppDatabase.kt
-│   └── network/                # API servisleri ve DTO'lar
-│       ├── api/                # OpenAiService, GeminiService
-│       └── dto/                # OpenAiDtos, GeminiDtos
-│── repository/                 # ChatRepository
-└── feature/                    # Ek ekranlar (Chat, Settings, Memory, Agents vb.)
-```
+### Ses
+- Mikrofon düğmesiyle başlatılan Türkçe SpeechRecognizer girişi.
+- Nihai tanıma sonucu komut olarak işlenir; ara tahminler komut çalıştırmaz.
+- Android Text-to-Speech ile Türkçe sesli yanıt.
+- Sürekli arka plan dinleme veya "JARVIS" uyandırma kelimesi henüz yoktur.
 
-## Kurulum Talimatları
+### Cihaz işlemleri
+- Yüklü uygulamaları listeleme ve başlatma.
+- Kullanıcı tarafından etkinleştirilirse AccessibilityService üzerinden görünür ekran metnini okuma, metin alanına yazma, metne tıklama ve kaydırma.
+- El feneri, medya ses seviyesi, parlaklık, ekran zaman aşımı ve Rahatsız Etmeyin gibi desteklenen kontroller.
+- Wi-Fi, Bluetooth ve diğer kısıtlı ayarlar için Android sistem ekranlarına yönlendirme.
+- Alarm ve zamanlayıcı için Android saat uygulamasının onay ekranını açma.
+- Son telefon işlemlerinin yerel geçmişi.
 
-### 1. Projeyi İndirme
+**Sınırlar:** Android izinleri, üretici yazılımı ve hedef uygulama desteği belirleyicidir. Her uygulamada sınırsız kontrol veya kullanıcı onayı olmadan mesaj gönderme vaat edilmez.
+
+### Bildirimler
+- Kullanıcı özel erişimi açarsa desteklenen bildirimleri cihazda tutma.
+- Yanıt eylemi sunan bildirimler için AI taslağı oluşturma.
+- Kullanıcı taslağı görüp onayladıktan sonra Android RemoteInput üzerinden yanıt gönderme.
+
+### Hafıza ve belgeler
+- Room ile yerel kişisel notları ekleme, düzenleme ve silme.
+- PDF'in ilk sekiz sayfasını render edip OCR ile metne dönüştürme.
+- Görsellerden ML Kit OCR ile metin çıkarma.
+
+### JARVIS Evolution
+- Cihaz izinleri, ağ ve depolama için temel öz tanılama.
+- Android dosya seçicisinden kullanıcının seçtiği metin/kod dosyalarını inceleme.
+- Seçilen dosyalarda TODO/FIXME, uzun satır ve olası gömülü anahtar kalıpları için sezgisel tarama.
+- İki seçilmiş dosyanın satır bazlı fark özeti.
+- Kullanıcının açıkça başlatmasıyla seçilen kod parçalarını AI sağlayıcısına göndererek inceletme.
+- GitHub deposunun kaynak ağacını ve salt okunur dosya önizlemesini uygulama içinde gösterme.
+- GitHub Actions derleme geçmişi ve yayımlanmış APK sürümlerini gösterme.
+- Rollback yönergesi. Android, normal uygulama izinleriyle kurulu APK'yı sessizce eski sürüme düşürmeye izin vermez.
+
+## Henüz tamamlanmayanlar
+
+- Her zaman dinleyen uyandırma kelimesi ve güvenilir arka plan ses servisi.
+- Tam çevrimdışı büyük dil modeli.
+- Araştırma, geliştirici, planlayıcı ve telefon ajanları için bağımsız araç kullanan otonom yürütme altyapısı. Şu an ajan kartları sohbet istemi hazırlar.
+- Uygulama içinden GitHub kaynak kodunu düzenleme, commit/PR açma ve otomatik geri alma.
+- Tam proje dosya yöneticisi, video analizi, takvim senkronizasyonu ve gelişmiş görev arayüzü.
+- Otomatik UI/instrumentation test kapsamı ve kapsamlı birim test paketi.
+- Üretim dağıtımı için imzalı release build ve güvenli sunucu tarafı API proxy'si.
+
+Görev yönetimi arayüzü şimdilik özellikle ertelenmiştir.
+
+## Derleme
+
 ```bash
-# Proje klasörüne git
-cd /workspace
-
-# Gradle wrapper'ı çalıştır (ilk çalışma Gradle'i indirir)
-export GRADLE_USER_HOME=/workspace/.gradle
+./gradlew :app:testDebugUnitTest
 ./gradlew :app:assembleDebug
 ```
 
-### 2. Uygulama Derlemesi
-Debug APK şu konumda çıkar:
+APK çıktısı:
+
 ```
-/workspace/app/build/outputs/debug/app-debug.apk
+app/build/outputs/apk/debug/app-debug.apk
 ```
 
-### 3. Uygulama Özellikleri
-- Uygulamayı ilk açtığında JARVIS dashboard ekranı görünecek
-- Mikrofon butonuna basılı tutarak sesli komut verilebilir
-- Metin girişi ile de sohbet possible
-- Saat/tarih, hava durumu gibi bilgiler gösterilir
-- Temel offline komutlar çalışır (internet olmadan)
-- AI sağlayıcısı eklendiğinde internet üzerinden gelişmiş cevaplar
+GitHub Actions çalışmaları: https://github.com/syntaxxsl/JARVIS-Android/actions
 
-### 4. Geliştirme Ortamı Kurulumu
-- Android Studio Arctic Fox veya newer
-- JDK 17
-- Android SDK (API 26 - 35)
-- 4GB+ RAM önerilir
+## API anahtarları ve güvenlik
 
-## Kullanılan Teknolojiler
-- Kotlin 2.0.21
-- Jetpack Compose
-- Material Design 3
-- Room Database
-- Hilt Dependency Injection
-- Retrofit & OkHttp
-- Coroutines & Flow
-- Speech Recognition API
-- Text-to-Speech API
-- Gradle 8.9
+1. JARVIS içinde AI Router ekranını aç.
+2. Birincil sağlayıcı için HTTPS API adresi, model ve anahtar gir.
+3. İsteğe bağlı olarak yedek sağlayıcıyı da yapılandır.
+4. Önce bağlantı testini çalıştır; ardından ayarları kaydet.
 
-## Güvenlik & Gizlilik
-- API anahtarları güvenli şekilde saklanmalı (SharedPreferences/EncryptedStorage)
-- Kullanıcı onayı olmadan hassas işlem yapılmamalı
-- Network security config, cleartext trafiği engeller
-- ProGuard kuralları uygulanmalı
-- Hassas izinler (MICROPHONE, NOTIFICATIONS) kullanıcı onayıyla
-
-## Gelecek Gelişim Vaiçeleri
-- OpenAI/Gemini API entegrasyonu
-- Gelişmiş sesli asistan (sürekli dinleme)
-- Hafıza sistemi (kullanıcı tercihleri, önceki konuşmalar)
-- Ajan sistem (Research, Developer, Planner vb.)
-- Görsel zekâ (OCR, fotoğraf analiz)
-- Video ve ses işleme
-- Takvim ve hatırlatıcı entegrasyonu
-- Dosya yönetici ve bulut senkronizasyonu
+API anahtarını GitHub deposuna, kaynak koda, ekran görüntüsüne veya herkese açık issue'ya ekleme. Cihaz içi şifreli depolama, anahtarın uygulama çalışırken bellekte kullanılmasını veya cihazın tamamen ele geçirilmesi riskini ortadan kaldırmaz. Daha güçlü üretim güvenliği için sunucu tarafı proxy gerekir.
