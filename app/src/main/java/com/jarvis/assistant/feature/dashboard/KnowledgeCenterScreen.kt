@@ -56,6 +56,7 @@ fun KnowledgeCenterScreen() {
     var status by remember { mutableStateOf("PDF, görsel ve metin dosyalarını kişisel bilgi kütüphanene ekle. İlgili kısa bölümler, soru sorulduğunda yapılandırdığın AI sağlayıcısına bağlam olarak gönderilebilir.") }
     var importing by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf(emptyList<Pair<KnowledgeDocument, String>>()) }
+    val concepts = remember(documents) { KnowledgeStore.topConcepts(context, 12) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) {
             importing = true
@@ -132,6 +133,20 @@ fun KnowledgeCenterScreen() {
                 HudCard {
                     Text(doc.title, color = JarvisText, fontWeight = FontWeight.Bold)
                     Text(excerpt, color = JarvisTextDim)
+                }
+            }
+        }
+        if (concepts.isNotEmpty()) {
+            item {
+                HudCard {
+                    Text("KİŞİSEL BİLGİ HARİTASI", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                    Text("Belgelerinde sık geçen kavramlar. Bu otomatik anahtar kelime görünümüdür; doğrulanmış ontoloji veya insan ilişkileri grafiği değildir.", color = JarvisTextDim)
+                    concepts.forEach { (term, count) ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(term, color = JarvisText)
+                            Text(count.toString() + " eşleşme", color = JarvisTextDim)
+                        }
+                    }
                 }
             }
         }
