@@ -1,124 +1,122 @@
 # JARVIS Android
 
-JARVIS, Android için Kotlin ve Jetpack Compose ile geliştirilen, Türkçe sesli/metin etkileşimi olan kişisel asistan uygulamasıdır. Arayüz Stark/Iron Man HUD estetiğinden esinlenir.
+JARVIS, Android için Kotlin ve Jetpack Compose ile geliştirilen Türkçe kişisel asistandır. Arayüz Stark/Iron Man HUD estetiğinden esinlenir.
 
 ## Paket ve derleme
 
 - Paket: `com.jarvis.assistant`
-- Dil: Kotlin
-- Arayüz: Jetpack Compose + Material 3
+- Dil / UI: Kotlin, Jetpack Compose, Material 3
 - Minimum Android: API 26
-- Compile/Target SDK: 35
+- Compile / Target SDK: 35
 - JDK: 17
 - CI: GitHub Actions
 
-GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığını doğrular, test raporunu ve APK artifact'ini yükler ve APK'yı ön sürüm GitHub Release olarak arşivler. CI derlemelerinde `versionCode` ve `versionName` otomatik artırılır. Debug imzalı APK, Play Store dağıtım imzası değildir.
+Her başarılı CI çalışması bir debug APK üretir, birim testlerini çalıştırır, APK'yı doğrular ve sürümlü GitHub Release olarak arşivler. Debug APK Play Store dağıtım imzası değildir.
 
-## Gerçekten uygulanmış özellikler
+## Uygulanan özellikler
 
-### Sohbet ve AI bağlantısı
-- Metin sohbeti ve Room üzerinde kalıcı sohbet geçmişi.
-- OpenAI uyumlu `/chat/completions` API uç noktasına birincil ve yedek sağlayıcı bağlantısı.
-- OpenRouter, Groq, Gemini ve Hugging Face Router için hazır OpenAI uyumlu adres/model profilleri.
-- Aynı cihazda `127.0.0.1` üzerinde çalışan Ollama gibi OpenAI uyumlu yerel sunucular için profil; güvenlik gereği HTTP yalnızca loopback adreslerinde kabul edilir.
-- Birincil sağlayıcı başarısız olursa yapılandırılmış yedek sağlayıcıya geçiş.
-- Ayar ekranında, henüz kaydedilmemiş form değerleriyle de gerçek API bağlantı testi.
-- OpenAI uyumlu `/models` uç noktasını destekleyen sağlayıcılardan canlı model listesi çekme ve model seçme.
-- API anahtarları Android cihazındaki şifreli SharedPreferences alanında tutulur; uzak sağlayıcı istekleri HTTPS ile gider. Yerel Ollama profili için cihazda ayrıca uyumlu sunucu kurulup çalıştırılmalıdır.
+### AI sohbeti ve sağlayıcı bağlantısı
+- Room üzerinde kalıcı sohbet geçmişi.
+- OpenAI uyumlu `/chat/completions` API'sine birincil + yedek sağlayıcı geçişi.
+- OpenRouter, Groq, Gemini OpenAI uyumlu uç noktası, Hugging Face Router ve yerel OpenAI uyumlu sunucu için profil alanları.
+- API bağlantı testi ve desteklenen `/models` uç noktasından model keşfi.
+- Şifreli SharedPreferences içinde API anahtarı saklama.
+- İstek geçmişi ve belge bağlamı için karakter bütçesi; iptal edilen OkHttp isteği için coroutine iptal bağlantısı.
+- Yanıt yönergelerinde kaynak disiplini, belirsizlik ve harici işlem iddialarını sınırlama.
 
-**Sınırlar:** Bu sürümde OpenAI uyumlu API akışı uygulamanın çalışan sohbet yoludur. Ayrı `AiRouter`, `OpenAiProvider` ve `GeminiProvider` sınıfları tam uygulama akışına bağlanmış çok sağlayıcılı bir DI sistemi değildir. Hugging Face ve Ollama profilleri OpenAI uyumlu sohbet API'si üzerinden bağlanır; model erişimi/servisin çalışması kullanıcı tarafından sağlanmalıdır. Uygulama kendi başına yerel model indirme veya inference motoru içermez. Ücretsiz kota veya kesintisiz ücretsiz kullanım garantisi yoktur.
+**Sınırlar:** Çalışan sohbet yolu genel OpenAI uyumlu istemci ve birincil/yedek geçişidir. Ayrı `AiRouter`, `OpenAiProvider` ve `GeminiProvider` sınıfları henüz bu çalışma yoluna bağlanmış tam DI mimarisi değildir. Sağlayıcıların hepsi aynı model listesi veya API sözleşmesini desteklemez. Uygulama yerel model indirme/inference motoru içermez; Ollama gibi yerel sunucu ayrıca kurulup aynı cihazda çalışmalıdır. API anahtarlarını kullanıcı kendi hesabından bağlar; ücretsiz ve sınırsız kota garantisi yoktur.
 
-### Ses
-- Mikrofon düğmesiyle başlatılan Türkçe SpeechRecognizer girişi.
-- Nihai tanıma sonucu komut olarak işlenir; ara tahminler komut çalıştırmaz.
-- Android Text-to-Speech ile Türkçe sesli yanıt.
-- Sürekli arka plan dinleme veya "JARVIS" uyandırma kelimesi henüz yoktur.
+### Ses ve sohbet
+- Mikrofon düğmesiyle başlatılan Türkçe konuşma tanıma.
+- Ara tanıma parçaları komut olarak çalıştırılmaz; nihai sonuç kullanılır.
+- Android Text-to-Speech ile sesli yanıt.
+- JARVIS STOP ile konuşma, TTS ve etkin AI isteğini durdurma.
 
-### Cihaz işlemleri
+**Sınırlar:** Sürekli arka plan dinleme ve uyandırma kelimesi bu sürümde yoktur. Android üretici/pil politikaları arka plan mikrofonunu kısıtlar.
+
+### Telefon ve bildirim kontrolü
 - Yüklü uygulamaları listeleme ve başlatma.
-- Kullanıcı tarafından etkinleştirilirse AccessibilityService üzerinden görünür ekran metnini okuma, metin alanına yazma, metne tıklama ve kaydırma.
-- El feneri, medya ses seviyesi, parlaklık, ekran zaman aşımı ve Rahatsız Etmeyin gibi desteklenen kontroller.
-- Wi-Fi, Bluetooth ve diğer kısıtlı ayarlar için Android sistem ekranlarına yönlendirme.
-- Alarm ve zamanlayıcı için Android saat uygulamasının onay ekranını açma.
+- Kullanıcı etkinleştirirse AccessibilityService üzerinden görünür ekran metni okuma, metne tıklama, yazma ve kaydırma.
+- El feneri, medya ses seviyesi, parlaklık, ekran zaman aşımı ve Rahatsız Etmeyin kontrolleri; gereken özel izinleri Android ayarlarından isteme.
+- Wi-Fi, Bluetooth, konum, pil ve diğer kısıtlı ayarlar için Android kontrol panellerini açma.
+- Alarm ve zamanlayıcıyı Android Saat uygulamasının onay ekranında hazırlama.
 - Son telefon işlemlerinin yerel geçmişi.
+- Bildirim erişimi verilirse desteklenen bildirimleri uygulama içinde gösterme.
+- Desteklenen RemoteInput bildirimleri için AI yanıt taslağı; gönderim yalnızca kullanıcının açık onayıyla.
+- Bildirim önizlemelerini şifreli saklama ve uygulama yedeklemesini kapatma.
 
-**Sınırlar:** Android izinleri, üretici yazılımı ve hedef uygulama desteği belirleyicidir. Her uygulamada sınırsız kontrol veya kullanıcı onayı olmadan mesaj gönderme vaat edilmez.
+**Sınırlar:** Android izinleri, üretici yazılımı ve hedef uygulama desteği belirleyicidir. JARVIS her uygulamada sınırsız kontrol, her bildirimde yanıt veya kullanıcı onayı olmadan mesaj gönderme yapamaz.
 
-### Bildirimler
-- Kullanıcı özel erişimi açarsa desteklenen bildirimleri cihazda, şifreli tercihler alanında tutma.
-- Önceden düz metin tutulan bildirim önizlemelerini ilk erişimde şifreli alana taşıma; uygulama yedeklemesini devre dışı bırakma.
-- Yanıt eylemi sunan bildirimler için AI taslağı oluşturma.
-- Kullanıcı taslağı görüp onayladıktan sonra Android RemoteInput üzerinden yanıt gönderme.
+### Hafıza, Knowledge Engine ve belge zekâsı
+- Room ile kişisel notları ekleme, düzenleme ve silme.
+- PDF, görsel ve metin belgelerini şifreli yerel bilgi kütüphanesine ekleme.
+- Kütüphane sınırı: en fazla 20 belge, belge başına en fazla 20.000 karakter.
+- Belgeyi parçalara ayıran ve BM25 benzeri anahtar-kelime/terim sıklığı puanlamasıyla ilgili bölümleri sıralayan yerel retrieval.
+- İlgili kişisel hafıza notlarını sohbet isteğine bağlam olarak seçme.
+- Sık geçen kavramlardan yerel kavram dizini oluşturma.
+- PDF'in ilk sekiz sayfasını render edip OCR; görsellerden ML Kit OCR.
 
-### Hafıza, bilgi kütüphanesi ve belgeler
-- Room ile yerel kişisel notları ekleme, düzenleme ve silme.
-- Şifreli yerel bilgi kütüphanesine PDF, görsel ve metin dosyaları ekleme; en fazla 20 belge ve belge başına 20.000 karakter sınırı.
-- Soru metnine göre basit yerel anahtar-kelime eşleştirmesiyle ilgili belge bölümlerini bulma; eşleşen kısa alıntıları AI isteğine bağlam olarak ekleme.
-- PDF'in ilk sekiz sayfasını render edip OCR ile metne dönüştürme.
-- Görsellerden ML Kit OCR ile metin çıkarma.
+**Sınırlar ve gizlilik:** Bu sürüm embedding tabanlı vektör arama veya gerçek semantik RAG değildir; yerel terim tabanlı sıralı aramadır. Kavram dizini ontoloji/ilişki grafiği değildir. Belgeler cihazda şifreli saklanır; eşleşen alıntılar çevrimiçi AI yanıtı istendiğinde yapılandırılmış sağlayıcıya gönderilebilir. Hassas dosyaları eklemeden önce bunu dikkate al.
 
-**Gizlilik:** Belgeler cihazda şifreli tercihler alanında saklanır. İlgili alıntılar çevrimiçi AI yanıtı istendiğinde yapılandırılmış sağlayıcıya gönderilebilir; hassas dosyaları eklemeden önce bunu dikkate al. Bu sürüm gerçek embedding tabanlı semantik arama değil, anahtar-kelime tabanlı yerel retrieval kullanır.
+### Mission Control ve uzman rol akışı
+- Hedefi en fazla beş sıralı alt göreve bölme.
+- Planı kullanıcıya gösterip kullanıcı başlattıktan sonra adımları sırayla çalıştırma.
+- İsteğe bağlı Challenger karşıt görüş ve Critic hata/güvenlik kontrolü.
+- Görev durumu, durdurma ve sınırlı yerel geçmiş.
 
-### Mission Control
-- Hedefi en fazla beş sıralı alt göreve ayıran AI planlama akışı.
-- Kullanıcı planı gözden geçirdikten sonra adımları sırayla AI üzerinden çalıştırma.
-- İsteğe bağlı ikinci geçiş Critic kontrolü: her adımın sonucunu ayrı bir denetim istemiyle mantık, eksik varsayım ve güvenlik açısından gözden geçirme.
-- Adım durumu, sonuç özeti, durdurma ve cihazda sınırlı geçmiş kaydı.
+**Sınırlar:** Planner, görev, Challenger ve Critic rolleri aynı yapılandırılmış AI sağlayıcısına gönderilen farklı istemlerdir; ayrı modeller veya bağımsız araç kullanan ajanlar değildir. Telefon, GitHub veya dosya işlemleri otomatik yapılmaz. Durdurma sonraki adımları engeller; devam eden sunucu isteğinin geri alınacağını garanti etmez.
 
-**Sınırlar:** Bu ilk Mission Control sürümü tek yapılandırılmış AI sohbet akışını kullanır; bağımsız araç kullanan çoklu ajan sistemi değildir. Durdurma, sonraki adımları durdurur; devam eden ağ isteğinin sunucu tarafında geri alınacağını garanti etmez. Harici telefon/GitHub işlemleri otomatik yürütülmez.
+### Research Studio ve otomatik takip
+- Wikipedia Türkçe, Crossref, OpenAlex ve arXiv üzerinden kaynak keşfi.
+- Kaynak başlığı, kısa özet veya akademik metaveri ve doğrudan URL gösterimi.
+- Kaynak bağlamını AI sağlayıcısına göndererek sentez, eksik bilgi ve doğrulama notları üretme.
+- En fazla 10 araştırma konusunu şifreli yerel depoda takip etme.
+- Kullanıcı açarsa WorkManager ile ağ bulunduğunda yaklaşık 24 saatte bir arka plan kaynak yenilemesi.
 
-### Research Studio
-- Wikipedia Türkçe arama uç noktası ve Crossref akademik yayın metaverisinde paralel olmayan, sırayla kaynak keşfi.
-- Bulunan başlık, kısa özet/metaveri ve kaynak URL'lerini ekranda gösterme.
-- Kaynak bağlamını AI sağlayıcısına göndererek sentez, çelişki ve doğrulanması gereken noktalar raporu oluşturma.
+**Sınırlar:** Bu tam web taraması değildir; arama servislerinin döndürdüğü özet/metaveriyle sınırlıdır. Tam makale metnine erişim garanti edilmez. Atıf sayısı kalite garantisi değildir. WorkManager çalıştırma saatini garanti etmez; Android pil/ağ koşullarına göre ertelenebilir.
 
-**Sınırlar:** Bu sürüm tam web taraması değildir; yalnızca Wikipedia ve Crossref kayıtlarını sorgular. Crossref sonucu çoğunlukla yayın metaverisidir, tam makale metni değildir. AI sentezi kaynağın tamamının okunduğu anlamına gelmez.
+### JARVIS Evolution / geliştirme laboratuvarı
+- Ağ, depolama ve izinler için temel öz tanılama.
+- Kullanıcının dosya seçicisinden seçtiği kaynak kodları yerel inceleme.
+- TODO/FIXME, uzun satır ve olası gömülü anahtar kalıpları için sezgisel statik tarama.
+- İki dosyanın satır bazlı fark özeti.
+- AI kod incelemesi ve geliştirme önerileri.
+- Seçilen son dosya için AI düzeltme taslağı üretme, taslağı uygulama içinde inceleme/düzenleme ve yeni dosya olarak dışa aktarma. Orijinal dosya otomatik değiştirilmez.
+- GitHub deposunun salt okunur kaynak ağacı ve dosya önizlemesi.
+- GitHub Actions derleme geçmişi ve yayımlanmış APK sürümleri.
+- Rollback yönergesi.
 
-### JARVIS Evolution
-- Cihaz izinleri, ağ ve depolama için temel öz tanılama.
-- Android dosya seçicisinden kullanıcının seçtiği metin/kod dosyalarını inceleme.
-- Seçilen dosyalarda TODO/FIXME, uzun satır ve olası gömülü anahtar kalıpları için sezgisel tarama.
-- İki seçilmiş dosyanın satır bazlı fark özeti.
-- Kullanıcının açıkça başlatmasıyla seçilen kod parçalarını AI sağlayıcısına göndererek inceletme.
-- GitHub deposunun kaynak ağacını ve salt okunur dosya önizlemesini uygulama içinde gösterme.
-- GitHub Actions derleme geçmişi ve yayımlanmış APK sürümlerini gösterme.
-- Rollback yönergesi. Android, normal uygulama izinleriyle kurulu APK'yı sessizce eski sürüme düşürmeye izin vermez.
+**Sınırlar:** Kod taraması tam güvenlik denetimi değildir. AI düzeltme taslağı derlenmiş veya test edilmiş sayılmaz; dışa aktarılan dosyayı projeye uygulamadan önce incele ve test et. Android normal uygulama izinleriyle kurulu APK'yı sessizce eski sürüme düşürmeye izin vermez. Bu sürüm uygulama içinden GitHub commit/PR göndermez.
 
-## Henüz tamamlanmayanlar
+## Henüz tamamlanmayan / dış entegrasyon gerektiren işler
 
-- Her zaman dinleyen uyandırma kelimesi ve güvenilir arka plan ses servisi.
+- Uyandırma kelimesi ve sürekli arka plan ses servisi.
 - Tam çevrimdışı büyük dil modeli.
-- Araştırma, geliştirici, planlayıcı ve telefon ajanları için bağımsız araç kullanan otonom yürütme altyapısı.
-- İnternet kaynaklarını geniş ölçekte tarayan, kaynak güvenilirliğini bağımsız olarak puanlayan ve planlı biçimde güncelleyen tam Deep Research motoru.
-- Embedding tabanlı vektör arama, reranking ve kişisel bilgi grafiği. Ajan kartları sohbet istemi hazırlar; Mission Control sınırlı ve sıralı AI görev akışı sağlar.
-- Uygulama içinden GitHub kaynak kodunu düzenleme, commit/PR açma ve otomatik geri alma.
-- Tam proje dosya yöneticisi, video analizi, takvim senkronizasyonu ve gelişmiş görev arayüzü.
-- Otomatik UI/instrumentation test kapsamı ve kapsamlı birim test paketi.
-- Üretim dağıtımı için imzalı release build ve güvenli sunucu tarafı API proxy'si.
-- Sağlayıcıların tamamında ortak olmayan model katalog uç noktaları için sağlayıcıya özel model keşfi.
+- Gerçek embedding modeli, vektör veritabanı, reranking ve semantik RAG.
+- Ontoloji tabanlı kişisel bilgi grafiği ve ilişkisel çıkarım.
+- Bağımsız modeller, ayrı araç izinleri ve araç yürütme motoruyla gerçek çoklu ajan sistemi.
+- Geniş web taraması, kaynak güvenilirliği doğrulaması ve tam metin akademik erişim.
+- GitHub kodunu uygulama içinden güvenli branch/PR ile düzenleme, CI sonuçlarına göre onaylı otomatik yayın ve gerçek rollback akışı.
+- Takvim/akıllı ev/video ve diğer üçüncü taraf servis entegrasyonları.
+- Sağlayıcıya özel bütün model keşifleri, API anahtarlarının sunucu tarafı proxy arkasına alınması.
+- Kapsamlı UI/instrumentation testleri, fiziksel cihaz/üretici bazlı testler ve imzalı release dağıtımı.
 
-Görev yönetimi arayüzü şimdilik özellikle ertelenmiştir.
-
-## Derleme
+## Test ve APK
 
 ```bash
 ./gradlew :app:testDebugUnitTest
 ./gradlew :app:assembleDebug
 ```
 
-APK çıktısı:
+APK: `app/build/outputs/apk/debug/app-debug.apk`
 
-```
-app/build/outputs/apk/debug/app-debug.apk
-```
+GitHub Actions: https://github.com/syntaxxsl/JARVIS-Android/actions
 
-GitHub Actions çalışmaları: https://github.com/syntaxxsl/JARVIS-Android/actions
+## API kurulumu
 
-## API anahtarları ve güvenlik
+1. JARVIS içindeki AI Router ekranını aç.
+2. Birincil sağlayıcının HTTPS adresini, modelini ve API anahtarını gir.
+3. İsteğe bağlı yedek sağlayıcıyı ayarla.
+4. Bağlantı testini çalıştır ve ayarları kaydet.
 
-1. JARVIS içinde AI Router ekranını aç.
-2. Birincil sağlayıcı için HTTPS API adresi, model ve anahtar gir.
-3. İsteğe bağlı olarak yedek sağlayıcıyı da yapılandır.
-4. Önce bağlantı testini çalıştır; ardından ayarları kaydet.
-
-API anahtarını GitHub deposuna, kaynak koda, ekran görüntüsüne veya herkese açık issue'ya ekleme. Cihaz içi şifreli depolama, anahtarın uygulama çalışırken bellekte kullanılmasını veya cihazın tamamen ele geçirilmesi riskini ortadan kaldırmaz. Daha güçlü üretim güvenliği için sunucu tarafı proxy gerekir.
+API anahtarını GitHub'a, kaynak koda veya ekran görüntüsüne koyma. Cihaz içi şifreli depolama, cihazın tamamen ele geçirilmesi riskini ortadan kaldırmaz. Üretim kullanımı için güvenli sunucu tarafı proxy tercih edilmelidir.
