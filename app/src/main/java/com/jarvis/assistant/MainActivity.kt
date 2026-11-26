@@ -138,7 +138,7 @@ class MainActivity : ComponentActivity() {
                                     backupUrl = backupUrl.trim(),
                                     messages = listOf("user" to "JARVIS bağlantı testi. Yalnızca 'Bağlantı başarılı.' yanıtını ver.")
                                 )
-                                onResult(true, response.replace("\\n", " ").take(180))
+                                onResult(true, response.replace("\n", " ").replace("\r", " ").take(180))
                             } catch (error: CancellationException) {
                                 throw error
                             } catch (error: Exception) {
