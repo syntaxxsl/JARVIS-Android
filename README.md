@@ -23,6 +23,7 @@ GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığı
 - Aynı cihazda `127.0.0.1` üzerinde çalışan Ollama gibi OpenAI uyumlu yerel sunucular için profil; güvenlik gereği HTTP yalnızca loopback adreslerinde kabul edilir.
 - Birincil sağlayıcı başarısız olursa yapılandırılmış yedek sağlayıcıya geçiş.
 - Ayar ekranında, henüz kaydedilmemiş form değerleriyle de gerçek API bağlantı testi.
+- OpenAI uyumlu `/models` uç noktasını destekleyen sağlayıcılardan canlı model listesi çekme ve model seçme.
 - API anahtarları Android cihazındaki şifreli SharedPreferences alanında tutulur; uzak sağlayıcı istekleri HTTPS ile gider. Yerel Ollama profili için cihazda ayrıca uyumlu sunucu kurulup çalıştırılmalıdır.
 
 **Sınırlar:** Bu sürümde OpenAI uyumlu API akışı uygulamanın çalışan sohbet yoludur. Ayrı `AiRouter`, `OpenAiProvider` ve `GeminiProvider` sınıfları tam uygulama akışına bağlanmış çok sağlayıcılı bir DI sistemi değildir. Hugging Face ve Ollama profilleri OpenAI uyumlu sohbet API'si üzerinden bağlanır; model erişimi/servisin çalışması kullanıcı tarafından sağlanmalıdır. Uygulama kendi başına yerel model indirme veya inference motoru içermez. Ücretsiz kota veya kesintisiz ücretsiz kullanım garantisi yoktur.
@@ -44,7 +45,8 @@ GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığı
 **Sınırlar:** Android izinleri, üretici yazılımı ve hedef uygulama desteği belirleyicidir. Her uygulamada sınırsız kontrol veya kullanıcı onayı olmadan mesaj gönderme vaat edilmez.
 
 ### Bildirimler
-- Kullanıcı özel erişimi açarsa desteklenen bildirimleri cihazda tutma.
+- Kullanıcı özel erişimi açarsa desteklenen bildirimleri cihazda, şifreli tercihler alanında tutma.
+- Önceden düz metin tutulan bildirim önizlemelerini ilk erişimde şifreli alana taşıma; uygulama yedeklemesini devre dışı bırakma.
 - Yanıt eylemi sunan bildirimler için AI taslağı oluşturma.
 - Kullanıcı taslağı görüp onayladıktan sonra Android RemoteInput üzerinden yanıt gönderme.
 
@@ -52,6 +54,13 @@ GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığı
 - Room ile yerel kişisel notları ekleme, düzenleme ve silme.
 - PDF'in ilk sekiz sayfasını render edip OCR ile metne dönüştürme.
 - Görsellerden ML Kit OCR ile metin çıkarma.
+
+### Mission Control
+- Hedefi en fazla beş sıralı alt göreve ayıran AI planlama akışı.
+- Kullanıcı planı gözden geçirdikten sonra adımları sırayla AI üzerinden çalıştırma.
+- Adım durumu, sonuç özeti, durdurma ve cihazda sınırlı geçmiş kaydı.
+
+**Sınırlar:** Bu ilk Mission Control sürümü tek yapılandırılmış AI sohbet akışını kullanır; bağımsız araç kullanan çoklu ajan sistemi değildir. Durdurma, sonraki adımları durdurur; devam eden ağ isteğinin sunucu tarafında geri alınacağını garanti etmez. Harici telefon/GitHub işlemleri otomatik yürütülmez.
 
 ### JARVIS Evolution
 - Cihaz izinleri, ağ ve depolama için temel öz tanılama.
@@ -67,11 +76,12 @@ GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığı
 
 - Her zaman dinleyen uyandırma kelimesi ve güvenilir arka plan ses servisi.
 - Tam çevrimdışı büyük dil modeli.
-- Araştırma, geliştirici, planlayıcı ve telefon ajanları için bağımsız araç kullanan otonom yürütme altyapısı. Şu an ajan kartları sohbet istemi hazırlar.
+- Araştırma, geliştirici, planlayıcı ve telefon ajanları için bağımsız araç kullanan otonom yürütme altyapısı. Ajan kartları sohbet istemi hazırlar; Mission Control sınırlı ve sıralı AI görev akışı sağlar.
 - Uygulama içinden GitHub kaynak kodunu düzenleme, commit/PR açma ve otomatik geri alma.
 - Tam proje dosya yöneticisi, video analizi, takvim senkronizasyonu ve gelişmiş görev arayüzü.
 - Otomatik UI/instrumentation test kapsamı ve kapsamlı birim test paketi.
 - Üretim dağıtımı için imzalı release build ve güvenli sunucu tarafı API proxy'si.
+- Sağlayıcıların tamamında ortak olmayan model katalog uç noktaları için sağlayıcıya özel model keşfi.
 
 Görev yönetimi arayüzü şimdilik özellikle ertelenmiştir.
 
