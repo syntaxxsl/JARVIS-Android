@@ -407,7 +407,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun offlineReply(command: String): String {
-        val q = command.lowercase()
+        val q = command.lowercase(java.util.Locale("tr", "TR"))
         return when {
             "saat" in q || "tarih" in q -> "Şu an: ${TimeUtils.nowFormatted()}"
             "merhaba" in q -> "Merhaba. Ben JARVIS. Nasıl yardımcı olabilirim?"
