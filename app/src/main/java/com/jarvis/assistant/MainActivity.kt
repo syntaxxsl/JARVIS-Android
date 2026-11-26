@@ -77,7 +77,13 @@ class MainActivity : ComponentActivity() {
             }
         }
         speechMgr = SpeechRecognizerManager(this)
-        ttsMgr = TtsManager(this).also { it.init() }
+        ttsMgr = TtsManager(this).also { manager ->
+            manager.init { ready ->
+                if (!ready) runOnUiThread {
+                    Toast.makeText(this, "Türkçe ses motoru kullanılamıyor; Android metin-ses ayarlarını kontrol et.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
         lifecycleScope.launch {
             speechMgr.result.collect { recognized ->
                 if (!recognized.isNullOrBlank()) sendMessage(recognized) { reply -> ttsMgr.speak(reply) }
