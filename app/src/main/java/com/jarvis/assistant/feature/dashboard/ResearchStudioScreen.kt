@@ -19,10 +19,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jarvis.assistant.core.research.ResearchEngine
 import com.jarvis.assistant.core.research.ResearchSource
+import com.jarvis.assistant.core.research.ResearchWatchStore
+import com.jarvis.assistant.core.research.ResearchRefreshScheduler
 import com.jarvis.assistant.core.ui.theme.JarvisCyan
 import com.jarvis.assistant.core.ui.theme.JarvisPanel
 import com.jarvis.assistant.core.ui.theme.JarvisText
@@ -50,6 +54,10 @@ fun ResearchStudioScreen(onAskAi: (String, (String) -> Unit) -> Unit) {
     var status by remember { mutableStateOf("Wikipedia Türkçe, Crossref, OpenAlex ve arXiv üzerinde kaynak keşfi yapar.") }
     var loading by remember { mutableStateOf(false) }
     var summarizing by remember { mutableStateOf(false) }
+    var watches by remember { mutableStateOf(ResearchWatchStore.list(context)) }
+    var autoRefreshEnabled by remember { mutableStateOf(context.getSharedPreferences("jarvis_research_settings", 0).getBoolean("auto_refresh", false)) }
+
+    LaunchedEffect(Unit) { watches = ResearchWatchStore.list(context) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -78,6 +86,10 @@ fun ResearchStudioScreen(onAskAi: (String, (String) -> Unit) -> Unit) {
                             runCatching { ResearchEngine.search(query) }
                                 .onSuccess {
                                     sources = it
+                                    if (watches.any { watch -> watch.query.equals(query.trim(), true) }) {
+                                        ResearchWatchStore.saveResults(context, query.trim(), it)
+                                        watches = ResearchWatchStore.list(context)
+                                    }
                                     status = if (it.isEmpty()) "Eşleşen kaynak bulunamadı. Konuyu farklı kelimelerle dene." else "${it.size} kaynak bulundu. Özet oluşturabilirsin."
                                 }
                                 .onFailure { status = "Araştırma başarısız: ${it.message ?: "ağ hatası"}" }
@@ -91,6 +103,40 @@ fun ResearchStudioScreen(onAskAi: (String, (String) -> Unit) -> Unit) {
                 }
                 if (loading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = JarvisCyan)
                 Text(status, color = JarvisTextDim)
+                OutlinedButton(
+                    onClick = {
+                        ResearchWatchStore.add(context, query)
+                        if (autoRefreshEnabled) ResearchRefreshScheduler.enable(context)
+                        watches = ResearchWatchStore.list(context)
+                        status = "Konu günlük araştırma listene eklendi."
+                    },
+                    enabled = query.trim().length >= 3,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Bu konuyu takip listeme ekle") }
+                OutlinedButton(
+                    onClick = {
+                        autoRefreshEnabled = !autoRefreshEnabled
+                        context.getSharedPreferences("jarvis_research_settings", 0).edit()
+                            .putBoolean("auto_refresh", autoRefreshEnabled).apply()
+                        if (autoRefreshEnabled) ResearchRefreshScheduler.enable(context)
+                        else ResearchRefreshScheduler.disable(context)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(if (autoRefreshEnabled) "Günlük otomatik yenileme: AÇIK" else "Günlük otomatik yenilemeyi aç") }
+            }
+        }
+        if (watches.isNotEmpty()) {
+            item {
+                HudCard {
+                    Text("TAKİP EDİLEN ARAŞTIRMALAR", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                    Text("En fazla 10 konu cihazda şifreli saklanır. Günlük yenileme Android WorkManager tarafından ağ bulunduğunda çalıştırılır; kesin saat garantisi yoktur.", color = JarvisTextDim)
+                    watches.forEach { watch ->
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(watch.query, color = JarvisText, fontWeight = FontWeight.SemiBold)
+                            Text(if (watch.updatedAt > 0L) "Son yenileme: " + java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(watch.updatedAt)) + " • " + watch.sources.size + " kaynak" else "Henüz yenilenmedi", color = JarvisTextDim)
+                        }
+                    }
+                }
             }
         }
         if (sources.isNotEmpty()) {
