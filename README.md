@@ -19,12 +19,13 @@ GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığı
 ### Sohbet ve AI bağlantısı
 - Metin sohbeti ve Room üzerinde kalıcı sohbet geçmişi.
 - OpenAI uyumlu `/chat/completions` API uç noktasına birincil ve yedek sağlayıcı bağlantısı.
-- OpenRouter, Groq ve Gemini'nin OpenAI uyumlu uç noktaları için hazır adres/model profilleri.
+- OpenRouter, Groq, Gemini ve Hugging Face Router için hazır OpenAI uyumlu adres/model profilleri.
+- Aynı cihazda `127.0.0.1` üzerinde çalışan Ollama gibi OpenAI uyumlu yerel sunucular için profil; güvenlik gereği HTTP yalnızca loopback adreslerinde kabul edilir.
 - Birincil sağlayıcı başarısız olursa yapılandırılmış yedek sağlayıcıya geçiş.
 - Ayar ekranında, henüz kaydedilmemiş form değerleriyle de gerçek API bağlantı testi.
-- API anahtarları Android cihazındaki şifreli SharedPreferences alanında tutulur; istekler HTTPS ile doğrudan sağlayıcıya gider.
+- API anahtarları Android cihazındaki şifreli SharedPreferences alanında tutulur; uzak sağlayıcı istekleri HTTPS ile gider. Yerel Ollama profili için cihazda ayrıca uyumlu sunucu kurulup çalıştırılmalıdır.
 
-**Sınırlar:** Bu sürümde OpenAI uyumlu API akışı uygulamanın çalışan sohbet yoludur. Ayrı `AiRouter`, `OpenAiProvider` ve `GeminiProvider` sınıfları tam uygulama akışına bağlanmış çok sağlayıcılı bir DI sistemi değildir. Hugging Face ve yerel LLM bağlantısı henüz tamamlanmamıştır. Ücretsiz kota veya kesintisiz ücretsiz kullanım garantisi yoktur.
+**Sınırlar:** Bu sürümde OpenAI uyumlu API akışı uygulamanın çalışan sohbet yoludur. Ayrı `AiRouter`, `OpenAiProvider` ve `GeminiProvider` sınıfları tam uygulama akışına bağlanmış çok sağlayıcılı bir DI sistemi değildir. Hugging Face ve Ollama profilleri OpenAI uyumlu sohbet API'si üzerinden bağlanır; model erişimi/servisin çalışması kullanıcı tarafından sağlanmalıdır. Uygulama kendi başına yerel model indirme veya inference motoru içermez. Ücretsiz kota veya kesintisiz ücretsiz kullanım garantisi yoktur.
 
 ### Ses
 - Mikrofon düğmesiyle başlatılan Türkçe SpeechRecognizer girişi.
