@@ -24,7 +24,7 @@ object PhoneActions {
     fun run(context: Context, action: String): String {
         val result = try {
             when (action) {
-                "torch" -> {
+                "torch", "torch_on", "torch_off" -> {
                     if (context.checkSelfPermission(Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
                         "El feneri için kamera izni gerekli."
                     } else {
@@ -32,7 +32,11 @@ object PhoneActions {
                         val cameraId = manager.cameraIdList.firstOrNull { id ->
                             manager.getCameraCharacteristics(id).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
                         } ?: return "Bu cihazda kullanılabilir flaş bulunamadı."
-                        val nextState = !torchEnabled
+                        val nextState = when (action) {
+                            "torch_on" -> true
+                            "torch_off" -> false
+                            else -> !torchEnabled
+                        }
                         manager.setTorchMode(cameraId, nextState)
                         torchEnabled = nextState
                         if (nextState) "El feneri açıldı." else "El feneri kapatıldı."
