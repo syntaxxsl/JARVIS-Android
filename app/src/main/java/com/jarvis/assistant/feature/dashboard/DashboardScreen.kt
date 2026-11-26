@@ -11,6 +11,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.jarvis.assistant.core.documents.DocumentAnalyzer
 import com.jarvis.assistant.core.phone.PhoneActionHistory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 
 import androidx.compose.animation.AnimatedContent
@@ -291,8 +293,9 @@ fun DashboardScreen(
                                     isAnalyzing = true
                                     analysis = "Belge inceleniyor..."
                                     scope.launch {
-                                        analysis = runCatching { DocumentAnalyzer.analyze(context, uri) }
-                                            .getOrElse { "Belge okunamadı: ${it.message ?: "bilinmeyen hata"}" }
+                                        analysis = runCatching {
+                                            withContext(Dispatchers.IO) { DocumentAnalyzer.analyze(context, uri) }
+                                        }.getOrElse { "Belge okunamadı: ${it.message ?: "bilinmeyen hata"}" }
                                         isAnalyzing = false
                                     }
                                 }
@@ -331,7 +334,7 @@ fun DashboardScreen(
                             LaunchedEffect(Unit) {
                                 while (true) {
                                     notificationRows = readJarvisNotifications(context)
-                                    kotlinx.coroutines.delay(6000)
+                                    kotlinx.coroutines.delay(15000)
                                 }
                             }
                             LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
