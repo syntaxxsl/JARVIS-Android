@@ -57,6 +57,65 @@ object JarvisAiClient {
         throw IllegalStateException(primaryError?.message ?: "AI sağlayıcısı yapılandırılmamış. Yerel komutlar kullanılabilir.")
     }
 
+    suspend fun listModels(apiKey: String, baseUrl: String): List<String> {
+        require(apiKey.isNotBlank()) { "Model listesini almak için API anahtarı gir." }
+        val normalized = baseUrl.trim().trimEnd('/')
+        val parsedUrl = runCatching { URI(normalized) }.getOrNull()
+            ?: throw IllegalArgumentException("Geçerli bir API adresi gir.")
+        val secureRemote = parsedUrl.scheme.equals("https", ignoreCase = true)
+        val localLoopback = parsedUrl.scheme.equals("http", ignoreCase = true) &&
+            parsedUrl.host?.lowercase() in setOf("localhost", "127.0.0.1", "::1")
+        require(secureRemote || localLoopback) {
+            "Uzak API adresleri HTTPS kullanmalı. HTTP yalnızca bu cihazdaki localhost servisi için açıktır."
+        }
+        val request = Request.Builder()
+            .url("$normalized/models")
+            .header("Authorization", "Bearer $apiKey")
+            .header("Accept", "application/json")
+            .get()
+            .build()
+        return suspendCancellableCoroutine { continuation ->
+            val call = client.newCall(request)
+            continuation.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, error: IOException) {
+                    if (continuation.isActive) continuation.resumeWithException(error)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    response.use { res ->
+                        val body = res.body?.string().orEmpty()
+                        if (!continuation.isActive) return
+                        if (!res.isSuccessful) {
+                            val detail = runCatching {
+                                JSONObject(body).optJSONObject("error")?.optString("message")
+                            }.getOrNull()
+                            continuation.resumeWithException(
+                                IllegalStateException(detail?.takeIf { it.isNotBlank() }
+                                    ?: ("Model listesi alınamadı (HTTP " + res.code + ")."))
+                            )
+                            return
+                        }
+                        val models = runCatching {
+                            val data = JSONObject(body).optJSONArray("data") ?: JSONArray()
+                            (0 until data.length()).mapNotNull { index ->
+                                data.optJSONObject(index)?.optString("id")?.takeIf { it.isNotBlank() }
+                            }.distinct().sorted()
+                        }.getOrElse {
+                            continuation.resumeWithException(IllegalStateException("Sağlayıcının model listesi yanıtı tanınamadı."))
+                            return
+                        }
+                        if (models.isEmpty()) {
+                            continuation.resumeWithException(IllegalStateException("Sağlayıcı kullanılabilir model döndürmedi."))
+                        } else {
+                            continuation.resume(models)
+                        }
+                    }
+                }
+            })
+        }
+    }
+
     suspend fun chat(
         apiKey: String,
         model: String,
