@@ -62,7 +62,8 @@ object JarvisAiClient {
         messages: List<Pair<String, String>>,
         baseUrl: String
     ): String {
-        require(apiKey.isNotBlank()) { "Önce Kontrol bölümünden API anahtarı kaydet." }
+        require(apiKey.isNotBlank()) { "Önce AI Router bölümünden API anahtarı gir." }
+        require(model.isNotBlank()) { "Seçilen sağlayıcı için model adını gir." }
         val normalized = baseUrl.trim().trimEnd('/')
         require(normalized.startsWith("https://")) { "API adresi https:// ile başlamalı." }
         val array = JSONArray()
@@ -72,7 +73,7 @@ object JarvisAiClient {
             array.put(JSONObject().put("role", role).put("content", content))
         }
         val payload = JSONObject()
-            .put("model", model.ifBlank { "openrouter/free" })
+            .put("model", model.trim())
             .put("messages", array)
             .put("temperature", 0.7)
             .put("max_tokens", 1200)
