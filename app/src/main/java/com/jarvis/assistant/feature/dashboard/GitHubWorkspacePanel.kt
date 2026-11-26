@@ -229,6 +229,7 @@ fun GitHubWorkspacePanel() {
             }) { Text("Bağlantıyı kes") }
         }
         Text("Token yetkileri: Contents (Read and write), Pull requests (Read and write), Actions (Read-only), Metadata (Read-only). Yalnızca bu depoya erişim ver.", color = JarvisTextDim)
+        OutlinedButton(onClick = { runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/settings/personal-access-tokens/new"))) } }, modifier = Modifier.fillMaxWidth()) { Text("GitHub token oluşturma sayfasını aç") }
         Text(status, color = JarvisText, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
         if (connected) {
             Text("DAL YÖNETİMİ", color = JarvisCyan, fontWeight = FontWeight.Bold)
