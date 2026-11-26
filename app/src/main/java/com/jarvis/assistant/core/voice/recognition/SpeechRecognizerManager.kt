@@ -41,8 +41,8 @@ class SpeechRecognizerManager(private val context: Context) {
                     _isListening.value = false
                 }
                 override fun onPartialResults(partialResults: android.os.Bundle?) {
-                    val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                    if (!matches.isNullOrEmpty()) _result.value = matches.first()
+                    // Partial hypotheses are intentionally not emitted as commands.
+                    // MainActivity executes only the final onResults value.
                 }
                 override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
             })
