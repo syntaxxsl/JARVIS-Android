@@ -77,6 +77,7 @@ fun DashboardScreen(
     var backupUrl by rememberSaveable { mutableStateOf(initialBackupBaseUrl) }
     var memoryText by rememberSaveable { mutableStateOf("") }
     var showStartup by rememberSaveable { mutableStateOf(true) }
+    var apiTestStatus by rememberSaveable { mutableStateOf("Henüz bağlantı testi yapılmadı.") }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(760); showStartup = false }
     val chat = remember { mutableStateListOf<ChatLine>() }
     LaunchedEffect(chatItems.size) {
@@ -519,7 +520,9 @@ fun DashboardScreen(
                             item { QuickCard("Kontrol merkezi", "Sistem izinleri ve cihaz kontrolleri", Icons.Default.Tune) { page = "control" } }
                             item { QuickCard("JARVIS Evolution", "Eksik özellik analizi, kod tarama, dosya gezgini, fark ve sürüm geçmişi", Icons.Default.AutoAwesome) { page = "evolution" } }
                         }
-                        "evolution" -> EvolutionCenterScreen()
+                        "evolution" -> EvolutionCenterScreen(
+                            onAskAi = { prompt, onResult -> onSendPress(prompt, onResult) }
+                        )
                         "router" -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             item { SectionHeading("JARVIS CONTROL", "AI yönlendirici ve sistem yönetimi") }
                             item {
@@ -535,6 +538,17 @@ fun DashboardScreen(
                                     StatusLine("Çevrimdışı komutlar", "HER ZAMAN", true)
                                 }
                             }
+                            item {
+                                HudCard {
+                                    Text("HIZLI SAĞLAYICI PROFİLLERİ", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                                    Text("Bu profiller yalnızca API adresi ve model alanlarını doldurur. Her sağlayıcı için kendi API anahtarın ve uygun model erişimin gerekir.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        OutlinedButton(onClick = { baseUrl = "https://openrouter.ai/api/v1"; model = "openrouter/free" }, modifier = Modifier.weight(1f)) { Text("OpenRouter") }
+                                        OutlinedButton(onClick = { baseUrl = "https://api.groq.com/openai/v1"; model = "llama-3.3-70b-versatile" }, modifier = Modifier.weight(1f)) { Text("Groq") }
+                                    }
+                                    OutlinedButton(onClick = { baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai"; model = "gemini-2.0-flash" }, modifier = Modifier.fillMaxWidth()) { Text("Gemini OpenAI uyumlu uç noktası") }
+                                }
+                            }
                             item { Text("BİRİNCİL SAĞLAYICI", color = JarvisCyan, fontWeight = FontWeight.Bold) }
                             item { OutlinedTextField(apiKey, { apiKey = it }, Modifier.fillMaxWidth(), label = { Text("Birincil API anahtarı") }, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), singleLine = true) }
                             item { OutlinedTextField(baseUrl, { baseUrl = it }, Modifier.fillMaxWidth(), label = { Text("Birincil API adresi") }, singleLine = true) }
@@ -548,6 +562,15 @@ fun DashboardScreen(
                                 Button(onClick = { onSaveSettings(apiKey, model, baseUrl, backupKey, backupModel, backupUrl) }, Modifier.fillMaxWidth()) {
                                     Icon(Icons.Default.Security, null); Spacer(Modifier.width(8.dp)); Text("Tüm AI ayarlarını güvenli kaydet")
                                 }
+                                OutlinedButton(onClick = {
+                                    apiTestStatus = "Bağlantı test ediliyor..."
+                                    onSendPress("JARVIS API bağlantı testi. Yalnızca 'Bağlantı başarılı.' yaz.", { result ->
+                                        apiTestStatus = if (result.contains("başarılı", true)) "Bağlantı yanıtı alındı: başarılı." else "Yanıt alındı fakat test mesajı beklenen ifadeyi içermiyor: " + result.take(150)
+                                    })
+                                }, modifier = Modifier.fillMaxWidth()) {
+                                    Icon(Icons.Default.NetworkCheck, null); Spacer(Modifier.width(8.dp)); Text("AI bağlantısını test et")
+                                }
+                                Text(apiTestStatus, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
                             }
                             item { Text("Anahtarlar cihazdaki şifreli tercihler alanında saklanır. Kota bilgisi servis sağlayıcıdan gelmediği sürece tahmin edilmez.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall) }
                             item { Divider(color = JarvisCyan.copy(alpha = .22f)) }
