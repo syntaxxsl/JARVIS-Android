@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "configVersion": 1,
+  "assistantInstruction": "Yanıtlarında Türkçe kullan. Kullanıcının isteğini doğrudan ele al; emin olmadığın bilgiyi kesinmiş gibi sunma. Harici telefon veya hesap işlemlerinde kullanıcı onayını bekle.",
+  "enabledModules": ["chat", "research", "knowledge", "mission", "evolution", "documents"]
+}
