@@ -43,8 +43,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
+import kotlin.coroutines.resume
 
-private data class MissionStep(val title: String, var result: String = "", var state: String = "BEKLEMEDE")
+private data class MissionStep(val title: String, val result: String = "", val state: String = "BEKLEMEDE")
 
 @Composable
 fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
@@ -152,7 +153,7 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
                             runToken++
                             planning = false
                             executing = false
-                            steps.forEach { if (it.state == "ÇALIŞIYOR") it.state = "DURDURULDU" }
+                            steps.indices.forEach { index -> if (steps[index].state == "ÇALIŞIYOR") steps[index] = steps[index].copy(state = "DURDURULDU") }
                             status = "Görev akışı durduruldu. Devam eden yanıt gelse bile sonraki adımlar başlatılmayacak."
                         },
                         enabled = planning || executing
@@ -192,18 +193,16 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
                                     for (index in steps.indices) {
                                         if (token != runToken) break
                                         val step = steps[index]
-                                        step.state = "ÇALIŞIYOR"
+                                        steps[index] = step.copy(state = "ÇALIŞIYOR")
                                         status = "Adım \${index + 1}/\${steps.size} yürütülüyor..."
                                         val result = askJarvis(
                                             "Sen JARVIS görev ajanısın. Genel hedef: $target\nŞu anki alt görev: \${step.title}\nBu adımı gerçekleştirirken yalnızca sahip olduğun bilgi ve metin üretme yeteneğini kullan. Harici araç, dosya, GitHub veya telefon işlemi yaptığını iddia etme. Gereken yerde uygulanabilir sonuç, kod/öneri veya net sınırlama sun. Yanıtını kısa ama yeterince ayrıntılı ver."
                                         )
                                         if (token != runToken) break
                                         if (result.isNullOrBlank()) {
-                                            step.state = "HATA / ZAMAN AŞIMI"
-                                            step.result = "Yanıt alınamadı veya istek zaman aşımına uğradı."
+                                            steps[index] = step.copy(state = "HATA / ZAMAN AŞIMI", result = "Yanıt alınamadı veya istek zaman aşımına uğradı.")
                                         } else {
-                                            step.state = "TAMAMLANDI"
-                                            step.result = result.take(5000)
+                                            steps[index] = step.copy(state = "TAMAMLANDI", result = result.take(5000))
                                         }
                                     }
                                     if (token == runToken) {
