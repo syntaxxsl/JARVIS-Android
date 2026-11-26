@@ -105,10 +105,10 @@ fun ResearchStudioScreen(onAskAi: (String, (String) -> Unit) -> Unit) {
                 Text(status, color = JarvisTextDim)
                 OutlinedButton(
                     onClick = {
-                        ResearchWatchStore.add(context, query)
-                        if (autoRefreshEnabled) ResearchRefreshScheduler.enable(context)
+                        val saved = ResearchWatchStore.add(context, query)
+                        if (saved && autoRefreshEnabled) ResearchRefreshScheduler.enable(context)
                         watches = ResearchWatchStore.list(context)
-                        status = "Konu günlük araştırma listene eklendi."
+                        status = if (saved) "Konu günlük araştırma listene eklendi." else "Konu kaydedilemedi; şifreli depolama erişimini kontrol et."
                     },
                     enabled = query.trim().length >= 3,
                     modifier = Modifier.fillMaxWidth()
