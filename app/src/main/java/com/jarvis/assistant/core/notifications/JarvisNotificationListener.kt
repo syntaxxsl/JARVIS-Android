@@ -20,8 +20,7 @@ class JarvisNotificationListener : NotificationListenerService() {
                 sbn.notification.actions?.firstOrNull { it.remoteInputs?.isNotEmpty() == true }
             }.getOrNull()
             NotificationReplyBridge.register(sbn.key, replyAction)
-            val prefs = getSharedPreferences(STORE, MODE_PRIVATE)
-            val current = runCatching { JSONArray(prefs.getString(KEY, "[]")) }.getOrDefault(JSONArray())
+            val current = NotificationStore.read(this)
             val next = JSONArray()
             next.put(JSONObject().apply {
                 put("key", sbn.key)
@@ -35,26 +34,21 @@ class JarvisNotificationListener : NotificationListenerService() {
                 val item = current.optJSONObject(i) ?: continue
                 if (item.optString("key") != sbn.key) next.put(item)
             }
-            prefs.edit().putString(KEY, next.toString()).apply()
+            NotificationStore.write(this, next)
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         NotificationReplyBridge.remove(sbn.key)
         runCatching {
-            val prefs = getSharedPreferences(STORE, MODE_PRIVATE)
-            val current = JSONArray(prefs.getString(KEY, "[]") ?: "[]")
+            val current = NotificationStore.read(this)
             val next = JSONArray()
             for (index in 0 until current.length()) {
                 val item = current.optJSONObject(index) ?: continue
                 if (item.optString("key") != sbn.key) next.put(item)
             }
-            prefs.edit().putString(KEY, next.toString()).apply()
+            NotificationStore.write(this, next)
         }
     }
 
-    companion object {
-        const val STORE = "jarvis_notification_store"
-        const val KEY = "recent_notifications"
-    }
 }
