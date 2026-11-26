@@ -126,6 +126,26 @@ class MainActivity : ComponentActivity() {
                             Toast.makeText(this, "Ayarlar kaydedilemedi: ${it.message}", Toast.LENGTH_LONG).show()
                         }
                     },
+                    onTestAiConnection = { key, model, url, backupKey, backupModel, backupUrl, onResult ->
+                        lifecycleScope.launch {
+                            try {
+                                val response = JarvisAiClient.chatWithFallback(
+                                    primaryKey = key.trim(),
+                                    primaryModel = model.trim(),
+                                    primaryUrl = url.trim(),
+                                    backupKey = backupKey.trim(),
+                                    backupModel = backupModel.trim(),
+                                    backupUrl = backupUrl.trim(),
+                                    messages = listOf("user" to "JARVIS bağlantı testi. Yalnızca 'Bağlantı başarılı.' yanıtını ver.")
+                                )
+                                onResult(true, response.replace("\\n", " ").take(180))
+                            } catch (error: CancellationException) {
+                                throw error
+                            } catch (error: Exception) {
+                                onResult(false, error.message ?: "Bilinmeyen bağlantı hatası")
+                            }
+                        }
+                    },
                     onPhoneAction = { action ->
                         if (action == "torch" && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                             pendingTorchPermission = true
