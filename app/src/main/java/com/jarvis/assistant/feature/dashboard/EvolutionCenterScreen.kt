@@ -63,7 +63,9 @@ private data class EvolutionFile(val uri: Uri, val name: String, val text: Strin
 private data class Diagnostic(val name: String, val detail: String, val passed: Boolean)
 
 @Composable
-fun EvolutionCenterScreen() {
+fun EvolutionCenterScreen(
+    onAskAi: (String, (String) -> Unit) -> Unit
+) {
     val context = LocalContext.current
     val files = remember { mutableStateListOf<EvolutionFile>() }
     val history = remember { mutableStateListOf<String>() }
@@ -72,6 +74,8 @@ fun EvolutionCenterScreen() {
     var report by remember { mutableStateOf("Henüz kod kalitesi taraması yapılmadı. Önce proje dosyalarını seç.") }
     var diffReport by remember { mutableStateOf("Karşılaştırmak için en az iki metin/kod dosyası seç.") }
     var scanning by remember { mutableStateOf(false) }
+    var aiReview by remember { mutableStateOf("Henüz AI kod incelemesi yapılmadı.") }
+    var aiReviewLoading by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         uris.forEach { uri ->
@@ -199,6 +203,29 @@ fun EvolutionCenterScreen() {
                     add("Her kod değişikliğinden sonra otomatik derleme, test ve önceki sürüme dönüş paketi üret.")
                 }
                 suggestions.forEach { Text("• $it", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall) }
+                Divider(color = JarvisCyan.copy(alpha = .20f))
+                Text("AI kod incelemesi", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                Text("Seçtiğin dosyaların içeriği, bu düğmeye bastığında yapılandırılmış AI sağlayıcına gönderilir. Gizli anahtar veya özel veri içeren dosyaları seçme.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                Button(
+                    onClick = {
+                        aiReviewLoading = true
+                        val source = files.take(4).joinToString("\\n\\n") { file ->
+                            "DOSYA: ${file.name}\\n" + file.text.take(5000)
+                        }
+                        val prompt = "JARVIS yazılım geliştirici ajanısın. Aşağıdaki yerel statik tarama raporunu ve kullanıcının seçtiği kod örneklerini incele. Gerçek bulgu ile varsayımı ayır. Kritik hata, güvenlik riski, bakım kalitesi, test önerisi ve uygulanabilir geliştirme planı ver. Kodları kendiliğinden değiştirme.\\n\\nRAPOR:\\n${runCodeAudit(files.toList())}\\n\\nKOD:\\n$source"
+                        onAskAi(prompt) { result ->
+                            aiReview = result
+                            aiReviewLoading = false
+                        }
+                    },
+                    enabled = files.isNotEmpty() && !aiReviewLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    androidx.compose.material3.Icon(Icons.Default.AutoAwesome, null)
+                    Text(if (aiReviewLoading) "AI inceliyor..." else "AI ile kodu incele")
+                }
+                if (aiReviewLoading) LinearProgressIndicator(Modifier.fillMaxWidth())
+                Text(aiReview, color = JarvisText, style = MaterialTheme.typography.bodySmall)
             }
         }
         item {
