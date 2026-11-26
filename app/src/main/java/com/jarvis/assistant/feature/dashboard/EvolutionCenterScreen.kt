@@ -62,6 +62,7 @@ import java.util.Locale
 private data class EvolutionFile(val uri: Uri, val name: String, val text: String)
 private data class Diagnostic(val name: String, val detail: String, val passed: Boolean)
 private data class BuildRun(val number: Int, val status: String, val conclusion: String, val sha: String, val url: String)
+private data class ApkRelease(val title: String, val tag: String, val published: String, val assetName: String, val downloadUrl: String, val releaseUrl: String)
 
 @Composable
 fun EvolutionCenterScreen(
@@ -79,6 +80,8 @@ fun EvolutionCenterScreen(
     var aiReviewLoading by remember { mutableStateOf(false) }
     var buildRuns by remember { mutableStateOf(emptyList<BuildRun>()) }
     var buildHistoryStatus by remember { mutableStateOf("GitHub Actions geçmişi yükleniyor...") }
+    var apkReleases by remember { mutableStateOf(emptyList<ApkRelease>()) }
+    var releaseHistoryStatus by remember { mutableStateOf("APK sürüm arşivi yükleniyor...") }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         uris.forEach { uri ->
@@ -143,6 +146,49 @@ fun EvolutionCenterScreen(
             buildHistoryStatus = if (it.isEmpty()) "Henüz GitHub Actions derlemesi bulunamadı." else "Son ${it.size} GitHub Actions çalışması."
         }.onFailure {
             buildHistoryStatus = "Derleme geçmişi alınamadı: ${it.message ?: "ağ hatası"}"
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val fetched = runCatching {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val connection = java.net.URL("https://api.github.com/repos/syntaxxsl/JARVIS-Android/releases?per_page=12").openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 8000
+                connection.readTimeout = 10000
+                connection.setRequestProperty("Accept", "application/vnd.github+json")
+                try {
+                    val body = connection.inputStream.bufferedReader().use { it.readText() }
+                    val array = org.json.JSONArray(body)
+                    buildList {
+                        for (i in 0 until array.length()) {
+                            val release = array.optJSONObject(i) ?: continue
+                            val assets = release.optJSONArray("assets") ?: org.json.JSONArray()
+                            for (j in 0 until assets.length()) {
+                                val asset = assets.optJSONObject(j) ?: continue
+                                val fileName = asset.optString("name")
+                                if (fileName.endsWith(".apk", true)) {
+                                    add(ApkRelease(
+                                        title = release.optString("name", release.optString("tag_name")),
+                                        tag = release.optString("tag_name"),
+                                        published = release.optString("published_at").take(10),
+                                        assetName = fileName,
+                                        downloadUrl = asset.optString("browser_download_url"),
+                                        releaseUrl = release.optString("html_url")
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                } finally {
+                    connection.disconnect()
+                }
+            }
+        }
+        fetched.onSuccess {
+            apkReleases = it
+            releaseHistoryStatus = if (it.isEmpty()) "Henüz yayımlanmış APK arşivi yok. Yeni başarılı derlemeler otomatik arşivlenecek." else "${it.size} indirilebilir APK sürümü bulundu."
+        }.onFailure {
+            releaseHistoryStatus = "APK arşivi alınamadı: ${it.message ?: "ağ hatası"}"
         }
     }
 
@@ -282,6 +328,20 @@ fun EvolutionCenterScreen(
                                 context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(run.url)))
                             }
                         }, modifier = Modifier.fillMaxWidth()) { Text("Derleme ayrıntılarını aç") }
+                    }
+                }
+                Divider(color = JarvisCyan.copy(alpha = .20f))
+                Text("İNDİRİLEBİLİR APK SÜRÜMLERİ", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                Text(releaseHistoryStatus, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                apkReleases.forEach { release ->
+                    Column(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+                        Text(release.title, color = JarvisText, fontWeight = FontWeight.Bold)
+                        Text("${release.tag} • ${release.published} • ${release.assetName}", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                        Button(onClick = {
+                            runCatching {
+                                context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(release.downloadUrl)))
+                            }
+                        }, modifier = Modifier.fillMaxWidth()) { Text("Bu APK sürümünü indir") }
                     }
                 }
                 OutlinedButton(onClick = {
