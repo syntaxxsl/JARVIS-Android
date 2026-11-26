@@ -538,6 +538,11 @@ fun DashboardScreen(
                                         OutlinedButton(onClick = { baseUrl = "https://api.groq.com/openai/v1"; model = "llama-3.3-70b-versatile" }, modifier = Modifier.weight(1f)) { Text("Groq") }
                                     }
                                     OutlinedButton(onClick = { baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai"; model = "gemini-2.0-flash" }, modifier = Modifier.fillMaxWidth()) { Text("Gemini OpenAI uyumlu uç noktası") }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        OutlinedButton(onClick = { baseUrl = "https://router.huggingface.co/v1"; model = "meta-llama/Llama-3.1-8B-Instruct" }, modifier = Modifier.weight(1f)) { Text("Hugging Face") }
+                                        OutlinedButton(onClick = { baseUrl = "http://127.0.0.1:11434/v1"; model = "llama3.2" }, modifier = Modifier.weight(1f)) { Text("Yerel Ollama") }
+                                    }
+                                    Text("Hugging Face için HF token ve erişimi açık model gerekir. Yerel Ollama profili yalnızca aynı telefondaki localhost servisine bağlanır; telefonda Ollama/uyumlu sunucu ayrıca çalışıyor olmalıdır.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                             item { Text("BİRİNCİL SAĞLAYICI", color = JarvisCyan, fontWeight = FontWeight.Bold) }
