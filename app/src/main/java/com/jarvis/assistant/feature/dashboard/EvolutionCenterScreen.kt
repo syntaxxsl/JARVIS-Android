@@ -1,0 +1,290 @@
+package com.jarvis.assistant.feature.dashboard
+
+import android.content.Context
+import android.content.pm.PackageInfo
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.provider.Settings
+import android.database.Cursor
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.jarvis.assistant.core.ui.theme.JarvisCyan
+import com.jarvis.assistant.core.ui.theme.JarvisPanel
+import com.jarvis.assistant.core.ui.theme.JarvisSuccess
+import com.jarvis.assistant.core.ui.theme.JarvisText
+import com.jarvis.assistant.core.ui.theme.JarvisTextDim
+import org.json.JSONArray
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+private data class EvolutionFile(val uri: Uri, val name: String, val text: String)
+private data class Diagnostic(val name: String, val detail: String, val passed: Boolean)
+
+@Composable
+fun EvolutionCenterScreen() {
+    val context = LocalContext.current
+    val files = remember { mutableStateListOf<EvolutionFile>() }
+    val history = remember { mutableStateListOf<String>() }
+    var diagnostics by remember { mutableStateOf(emptyList<Diagnostic>()) }
+    var selectedFile by remember { mutableStateOf<EvolutionFile?>(null) }
+    var report by remember { mutableStateOf("Henüz kod kalitesi taraması yapılmadı. Önce proje dosyalarını seç.") }
+    var diffReport by remember { mutableStateOf("Karşılaştırmak için en az iki metin/kod dosyası seç.") }
+    var scanning by remember { mutableStateOf(false) }
+
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        uris.forEach { uri ->
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val name = queryDisplayName(context, uri)
+            val text = runCatching {
+                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText().take(1_000_000) }.orEmpty()
+            }.getOrDefault("")
+            if (text.isNotBlank() && files.none { it.uri == uri }) files.add(EvolutionFile(uri, name, text))
+        }
+        if (files.size >= 2) {
+            val a = files[files.lastIndex - 1]
+            val b = files[files.lastIndex]
+            diffReport = compareText(a, b)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val version = runCatching {
+            val p: PackageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            "${p.versionName ?: "?"} (${p.longVersionCodeCompat()})"
+        }.getOrDefault("Bilinmiyor")
+        val prefs = context.getSharedPreferences("jarvis_evolution", Context.MODE_PRIVATE)
+        val now = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date())
+        val snapshot = "$now • JARVIS $version"
+        val stored = runCatching { JSONArray(prefs.getString("versions", "[]")) }.getOrNull() ?: JSONArray()
+        if ((0 until stored.length()).none { stored.optString(it).contains(version) }) stored.put(snapshot)
+        while (stored.length() > 20) stored.remove(0)
+        prefs.edit().putString("versions", stored.toString()).apply()
+        history.clear()
+        for (i in 0 until stored.length()) history.add(stored.optString(i))
+        diagnostics = runDiagnostics(context)
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            SectionHeading("STARK INDUSTRIES // EVOLUTION", "JARVIS gelişim merkezi")
+            Text("Proje analizi, kod inceleme, değişiklik karşılaştırma ve sürüm takibi.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+        }
+        item {
+            HudCard {
+                Row {
+                    androidx.compose.material3.Icon(Icons.Default.CheckCircle, null, tint = JarvisCyan)
+                    Text("SİSTEM ÖZ DENETİMİ", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                }
+                diagnostics.forEach { d ->
+                    StatusLine(d.name, if (d.passed) "HAZIR" else "KONTROL GEREKİYOR", d.passed)
+                    Text(d.detail, color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                }
+                OutlinedButton(onClick = { diagnostics = runDiagnostics(context) }, modifier = Modifier.fillMaxWidth()) {
+                    androidx.compose.material3.Icon(Icons.Default.Refresh, null); Text(" Testleri yeniden çalıştır")
+                }
+            }
+        }
+        item {
+            HudCard {
+                Row {
+                    androidx.compose.material3.Icon(Icons.Default.FolderOpen, null, tint = JarvisCyan)
+                    Text("PROJE DOSYALARI GEZGİNİ", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                }
+                Text("Android dosya seçicisiyle proje klasöründen Kotlin, Java, XML, Gradle veya metin dosyalarını seç. JARVIS seçtiğin dosyaları cihaz içinde inceler.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                Button(onClick = { picker.launch(arrayOf("text/*", "application/xml", "application/json", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) {
+                    androidx.compose.material3.Icon(Icons.Default.FolderOpen, null); Text(" Proje dosyalarını seç")
+                }
+                Text("Seçilen dosya: ${files.size}", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                files.forEach { file ->
+                    Text(file.name, color = JarvisText, style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp))
+                    if (selectedFile == file) {
+                        Text(file.text.take(1800), color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                    }
+                    OutlinedButton(onClick = { selectedFile = if (selectedFile == file) null else file }, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (selectedFile == file) "Önizlemeyi kapat: ${file.name}" else "Önizle: ${file.name}")
+                    }
+                }
+            }
+        }
+        item {
+            HudCard {
+                Row {
+                    androidx.compose.material3.Icon(Icons.Default.BugReport, null, tint = JarvisCyan)
+                    Text("KOD KALİTESİ VE HATA RAPORU", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                }
+                Text("Seçilen kaynaklarda TODO/FIXME işaretleri, aşırı uzun satırlar ve olası gömülü anahtar kalıpları için yerel statik tarama.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                Button(onClick = {
+                    scanning = true
+                    report = runCodeAudit(files.toList())
+                    scanning = false
+                }, enabled = files.isNotEmpty() && !scanning, modifier = Modifier.fillMaxWidth()) {
+                    androidx.compose.material3.Icon(Icons.Default.Code, null); Text(" Kodu tara")
+                }
+                if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth())
+                Text(report, color = JarvisText, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        item {
+            HudCard {
+                Row {
+                    androidx.compose.material3.Icon(Icons.Default.CompareArrows, null, tint = JarvisCyan)
+                    Text("KOD DEĞİŞİKLİKLERİNİ KARŞILAŞTIR", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                }
+                Text("Son seçilen iki dosyanın satır bazlı fark özeti.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                Text(diffReport, color = JarvisText, style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick = {
+                    if (files.size >= 2) diffReport = compareText(files[files.lastIndex - 1], files.last())
+                }, enabled = files.size >= 2, modifier = Modifier.fillMaxWidth()) { Text("Son iki dosyayı karşılaştır") }
+            }
+        }
+        item {
+            HudCard {
+                Row {
+                    androidx.compose.material3.Icon(Icons.Default.Lightbulb, null, tint = JarvisCyan)
+                    Text("AI GELİŞTİRME ÖNERİLERİ", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                }
+                val suggestions = buildList {
+                    if (diagnostics.any { !it.passed }) add("Eksik Android izinlerini ve sistem erişimlerini Ayarlar ekranından gözden geçir.")
+                    if (files.isEmpty()) add("GitHub proje klasörünü seçerek gerçek kaynak kodu üzerinde inceleme başlat.")
+                    if (report.contains("TODO") || report.contains("FIXME")) add("Açık TODO/FIXME maddelerini önceliklendirip test senaryolarına dönüştür.")
+                    add("AI sağlayıcı anahtarlarını APK içine gömmek yerine güvenli sunucu aracısı üzerinden yönet.")
+                    add("Her kod değişikliğinden sonra otomatik derleme, test ve önceki sürüme dönüş paketi üret.")
+                }
+                suggestions.forEach { Text("• $it", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall) }
+            }
+        }
+        item {
+            HudCard {
+                Row {
+                    androidx.compose.material3.Icon(Icons.Default.History, null, tint = JarvisCyan)
+                    Text("APK / SÜRÜM GEÇMİŞİ", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                }
+                if (history.isEmpty()) Text("Henüz sürüm kaydı yok.", color = JarvisTextDim)
+                history.reversed().forEach { Text(it, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall) }
+                Text("Bu liste cihazda açılan uygulama sürümlerini kaydeder; GitHub Actions APK arşivi henüz bağlanmadı.", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        item {
+            HudCard {
+                Row {
+                    androidx.compose.material3.Icon(Icons.Default.Security, null, tint = JarvisCyan)
+                    Text("GERİ ALMA / ROLLBACK", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                }
+                Text("Android, kurulu uygulamanın kendi kendine eski sürüme düşürülmesine normal uygulama izinleriyle izin vermez. Güvenli geri alma için önceki imzalı APK'yı GitHub Actions sürüm arşivinden indirip Android kurulumunu kullanıcı olarak onaylamalısın.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        item { Spacer(Modifier.height(12.dp)) }
+    }
+}
+
+private fun runDiagnostics(context: Context): List<Diagnostic> {
+    val connectivity = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+    val caps = connectivity?.getNetworkCapabilities(connectivity.activeNetwork)
+    val online = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    val microphone = context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    val notifications = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")?.contains(context.packageName) == true
+    val accessibility = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)?.contains(context.packageName) == true
+    val storage = runCatching { context.filesDir.canRead() && context.filesDir.canWrite() }.getOrDefault(false)
+    return listOf(
+        Diagnostic("Uygulama iç depolaması", "Uygulama özel alanı okunabilir/yazılabilir.", storage),
+        Diagnostic("İnternet bağlantısı", if (online) "Ağ erişimi mevcut; AI servisi ayrıca test edilmelidir." else "Doğrulanmış internet bağlantısı yok.", online),
+        Diagnostic("Mikrofon izni", if (microphone) "Sesli komut izni verilmiş." else "Sesli komut için mikrofon izni gerekli.", microphone),
+        Diagnostic("Bildirim erişimi", if (notifications) "Bildirim dinleyicisi izni açık." else "Bildirim özellikleri için özel erişim gerekli.", notifications),
+        Diagnostic("Erişilebilirlik servisi", if (accessibility) "Erişilebilirlik servisi etkin." else "Ekran etkileşimi için servis kullanıcı tarafından etkinleştirilmeli.", accessibility)
+    )
+}
+
+private fun runCodeAudit(files: List<EvolutionFile>): String {
+    if (files.isEmpty()) return "Önce kaynak dosyası seç."
+    var todos = 0
+    var fixmes = 0
+    var longLines = 0
+    var possibleSecrets = 0
+    files.forEach { file ->
+        val lines = file.text.lines()
+        todos += Regex("TODO", RegexOption.IGNORE_CASE).findAll(file.text).count()
+        fixmes += Regex("FIXME", RegexOption.IGNORE_CASE).findAll(file.text).count()
+        longLines += lines.count { it.length > 160 }
+        possibleSecrets += Regex("(?i)(api[_-]?key|secret|token)\\s*[:=]\\s*[\"'][^\"']{12,}[\"']").findAll(file.text).count()
+    }
+    return "Taranan dosya: ${files.size}\nTODO: $todos  •  FIXME: $fixmes\n160 karakterden uzun satır: $longLines\nOlası gömülü gizli anahtar eşleşmesi: $possibleSecrets\n\nBu sezgisel tarama tam güvenlik denetimi veya derleyici testi değildir; eşleşmeleri elle doğrula."
+}
+
+private fun compareText(a: EvolutionFile, b: EvolutionFile): String {
+    val left = a.text.lines()
+    val right = b.text.lines()
+    val max = maxOf(left.size, right.size)
+    var changed = 0
+    val samples = mutableListOf<String>()
+    for (i in 0 until max) {
+        val x = left.getOrNull(i)
+        val y = right.getOrNull(i)
+        if (x != y) {
+            changed++
+            if (samples.size < 12) {
+                if (x != null) samples.add("- ${i + 1}: ${x.take(120)}")
+                if (y != null) samples.add("+ ${i + 1}: ${y.take(120)}")
+            }
+        }
+    }
+    return "${a.name}  →  ${b.name}\nSatır sayısı: ${left.size} → ${right.size}\nFarklı satır konumları: $changed\n\n" + samples.joinToString("\n").ifBlank { "Metinler aynı." }
+}
+
+private fun queryDisplayName(context: Context, uri: Uri): String {
+    var name = uri.lastPathSegment ?: "dosya"
+    val cursor: Cursor? = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+    cursor?.use { if (it.moveToFirst()) name = it.getString(0) ?: name }
+    return name
+}
+
+@Suppress("DEPRECATION")
+private fun PackageInfo.longVersionCodeCompat(): Long =
+    if (android.os.Build.VERSION.SDK_INT >= 28) longVersionCode else versionCode.toLong()
