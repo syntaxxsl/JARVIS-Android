@@ -60,6 +60,7 @@ import org.json.JSONArray
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 private data class EvolutionFile(val uri: Uri, val name: String, val text: String)
 private data class Diagnostic(val name: String, val detail: String, val passed: Boolean)
