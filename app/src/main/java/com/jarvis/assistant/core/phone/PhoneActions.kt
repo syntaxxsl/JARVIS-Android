@@ -32,9 +32,10 @@ object PhoneActions {
                         val cameraId = manager.cameraIdList.firstOrNull { id ->
                             manager.getCameraCharacteristics(id).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
                         } ?: return "Bu cihazda kullanılabilir flaş bulunamadı."
-                        torchEnabled = !torchEnabled
-                        manager.setTorchMode(cameraId, torchEnabled)
-                        if (torchEnabled) "El feneri açıldı." else "El feneri kapatıldı."
+                        val nextState = !torchEnabled
+                        manager.setTorchMode(cameraId, nextState)
+                        torchEnabled = nextState
+                        if (nextState) "El feneri açıldı." else "El feneri kapatıldı."
                     }
                 }
                 "volume_up", "volume_down", "volume_mute" -> {
