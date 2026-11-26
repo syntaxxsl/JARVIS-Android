@@ -80,6 +80,11 @@ class MainActivity : ComponentActivity() {
                 if (!recognized.isNullOrBlank()) sendMessage(recognized) { reply -> ttsMgr.speak(reply) }
             }
         }
+        lifecycleScope.launch {
+            speechMgr.error.collect { error ->
+                if (!error.isNullOrBlank()) Toast.makeText(this@MainActivity, error, Toast.LENGTH_SHORT).show()
+            }
+        }
 
         setContent {
             JarvisTheme {
@@ -168,6 +173,23 @@ class MainActivity : ComponentActivity() {
     private fun sendMessage(message: String, onReply: (String) -> Unit) {
         val clean = message.trim()
         if (clean.isBlank()) return
+        val clockReply = handleClockCommand(clean)
+        if (clockReply != null) {
+            lifecycleScope.launch {
+                database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "user", content = clean))
+                database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "assistant", content = clockReply))
+            }
+            history.add("user" to clean)
+            history.add("assistant" to clockReply)
+            onReply(clockReply)
+            return
+        }
+        val normalizedCommand = clean.lowercase(java.util.Locale("tr", "TR"))
+        if ("ekranı oku" in normalizedCommand || "ekrani oku" in normalizedCommand) {
+            val screenText = com.jarvis.assistant.core.phone.JarvisAccessibilityService.readScreen()
+            onReply(screenText)
+            return
+        }
         val phoneAction = detectPhoneAction(clean)
         if (phoneAction != null) {
             val reply = PhoneActions.run(this, phoneAction)
@@ -250,8 +272,48 @@ class MainActivity : ComponentActivity() {
             "ses ayar" in q -> "sound"
             "uygulama ayar" in q -> "apps"
             "bildirim ayar" in q -> "notifications"
+            listOf("feneri aç", "el fenerini aç", "ışığı aç", "flashlight on",
+                "feneri kapat", "el fenerini kapat", "ışığı kapat", "flashlight off").any(q::contains) -> "torch"
             "telefon ayar" in q || q == "ayarları aç" || q == "ayarlar" -> "settings"
             else -> null
+        }
+    }
+
+    private fun handleClockCommand(command: String): String? {
+        val q = command.lowercase(java.util.Locale("tr", "TR"))
+        return try {
+            if (listOf("alarm", "uyandır", "uyandırma").any(q::contains)) {
+                val time = Regex("([0-9]{1,2}):([0-9]{2})").find(q)
+                val hour = time?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it in 0..23 }
+                val minute = time?.groupValues?.get(2)?.toIntOrNull()?.takeIf { it in 0..59 }
+                startActivity(Intent(AlarmClock.ACTION_SET_ALARM).apply {
+                    if (hour != null && minute != null) {
+                        putExtra(AlarmClock.EXTRA_HOUR, hour)
+                        putExtra(AlarmClock.EXTRA_MINUTES, minute)
+                    }
+                    putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+                })
+                if (hour != null && minute != null) "Alarmı " + "%02d:%02d".format(hour, minute) + " için ayarlama ekranını açtım. Kaydetmeden önce kontrol et."
+                else "Alarm kurma ekranını açtım. Saati seçip kaydedebilirsin."
+            } else if (listOf("zamanlayıcı", "geri sayım", "timer").any(q::contains)) {
+                val match = Regex("([0-9]+)\\s*(saniye|sn|dakika|dk|saat)").find(q)
+                    ?: return "Zamanlayıcı süresini belirt. Örnek: 5 dakika zamanlayıcı kur."
+                val amount = match.groupValues[1].toIntOrNull()?.coerceIn(1, 86400)
+                    ?: return "Geçerli bir süre belirt."
+                val seconds = when (match.groupValues[2]) {
+                    "saat" -> amount * 3600
+                    "dakika", "dk" -> amount * 60
+                    else -> amount
+                }.coerceAtMost(86400)
+                startActivity(Intent(AlarmClock.ACTION_SET_TIMER).apply {
+                    putExtra(AlarmClock.EXTRA_LENGTH, seconds)
+                    putExtra(AlarmClock.EXTRA_MESSAGE, "JARVIS zamanlayıcısı")
+                    putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+                })
+                "Zamanlayıcıyı " + amount + " " + match.groupValues[2] + " için ayarlama ekranını açtım. Onaylayıp başlat."
+            } else null
+        } catch (error: Exception) {
+            "Saat uygulaması açılamadı: " + (error.message ?: "Android kısıtlaması")
         }
     }
 
