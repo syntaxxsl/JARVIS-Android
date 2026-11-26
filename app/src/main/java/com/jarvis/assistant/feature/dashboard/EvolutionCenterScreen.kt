@@ -255,7 +255,7 @@ fun EvolutionCenterScreen(
                     enabled = files.isNotEmpty() && !aiReviewLoading,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    androidx.compose.material3.Icon(Icons.Default.AutoAwesome, null)
+                    androidx.compose.material3.Icon(Icons.Default.Lightbulb, null)
                     Text(if (aiReviewLoading) "AI inceliyor..." else "AI ile kodu incele")
                 }
                 if (aiReviewLoading) LinearProgressIndicator(Modifier.fillMaxWidth())
