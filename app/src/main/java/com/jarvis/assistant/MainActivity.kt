@@ -41,6 +41,8 @@ class MainActivity : ComponentActivity() {
     private val history = mutableListOf<Pair<String, String>>()
     private var activeResponseJob: Job? = null
     private var pendingTorchPermission = false
+    private var pendingTorchAction: String? = null
+    private var pendingTorchReply: ((String) -> Unit)? = null
     private val prefs by lazy {
         val masterKey = MasterKey.Builder(this).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
         EncryptedSharedPreferences.create(
@@ -147,8 +149,10 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onPhoneAction = { action ->
-                        if (action == "torch" && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        if (action in setOf("torch", "torch_on", "torch_off") && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                             pendingTorchPermission = true
+                            pendingTorchAction = action
+                            pendingTorchReply = null
                             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
                         } else {
                             val result = PhoneActions.run(this, action)
@@ -167,10 +171,23 @@ class MainActivity : ComponentActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CAMERA_PERMISSION && pendingTorchPermission) {
             pendingTorchPermission = false
+            val action = pendingTorchAction ?: "torch"
+            pendingTorchAction = null
+            val reply = pendingTorchReply
+            pendingTorchReply = null
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, PhoneActions.run(this, "torch"), Toast.LENGTH_SHORT).show()
+                val result = PhoneActions.run(this, action)
+                if (reply != null) {
+                    lifecycleScope.launch {
+                        database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "assistant", content = result))
+                        reply(result)
+                    }
+                } else {
+                    Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
+                }
             } else {
-                Toast.makeText(this, "El feneri için kamera izni verilmedi.", Toast.LENGTH_SHORT).show()
+                val denied = "El feneri komutu için kamera izni verilmedi."
+                if (reply != null) reply(denied) else Toast.makeText(this, denied, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -212,6 +229,18 @@ class MainActivity : ComponentActivity() {
         }
         val phoneAction = detectPhoneAction(clean)
         if (phoneAction != null) {
+            if (phoneAction in setOf("torch", "torch_on", "torch_off") &&
+                checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
+            ) {
+                pendingTorchPermission = true
+                pendingTorchAction = phoneAction
+                pendingTorchReply = onReply
+                lifecycleScope.launch {
+                    database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "user", content = clean))
+                }
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
+                return
+            }
             val reply = PhoneActions.run(this, phoneAction)
             lifecycleScope.launch {
                 database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "user", content = clean))
