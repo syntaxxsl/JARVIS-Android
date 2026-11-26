@@ -72,28 +72,64 @@ object KnowledgeStore {
     }
 
     fun search(context: Context, query: String, limit: Int = 3): List<Pair<KnowledgeDocument, String>> {
-        val tokens = normalize(query).split(Regex("[^\\p{L}\\p{N}]+"))
-            .filter { it.length >= 3 }.distinct().take(18)
-        if (tokens.isEmpty()) return emptyList()
-        return list(context).mapNotNull { doc ->
-            val normalized = normalize(doc.text)
-            val title = normalize(doc.title)
-            val score = tokens.sumOf { token ->
-                (if (title.contains(token)) 4 else 0) +
-                    Regex(Regex.escape(token)).findAll(normalized).count().coerceAtMost(8)
+        val queryTokens = tokenize(query).distinct().take(24)
+        if (queryTokens.isEmpty()) return emptyList()
+        val docs = list(context)
+        if (docs.isEmpty()) return emptyList()
+        data class Chunk(val doc: KnowledgeDocument, val text: String, val tokens: List<String>)
+        val chunks = docs.flatMap { doc ->
+            val paragraphs = doc.text.split(Regex("\\n\\s*\\n"))
+                .filter { it.isNotBlank() }
+            val source = if (paragraphs.isEmpty()) listOf(doc.text) else paragraphs
+            val pieces = mutableListOf<String>()
+            source.forEach { paragraph ->
+                if (paragraph.length <= 1100) pieces.add(paragraph)
+                else paragraph.chunked(900).forEach { pieces.add(it) }
             }
-            if (score == 0) null else {
-                val first = tokens.firstOrNull { normalized.contains(it) }
-                val position = first?.let(normalized::indexOf)?.coerceAtLeast(0) ?: 0
-                val start = (position - 280).coerceAtLeast(0)
-                val end = (position + 900).coerceAtMost(doc.text.length)
-                doc to doc.text.substring(start, end).trim()
+            pieces.map { text -> Chunk(doc, text, tokenize(text)) }
+        }.filter { it.tokens.isNotEmpty() }
+        if (chunks.isEmpty()) return emptyList()
+
+        val averageLength = chunks.map { it.tokens.size }.average().coerceAtLeast(1.0)
+        val documentFrequency = queryTokens.associateWith { token ->
+            chunks.count { token in it.tokens }
+        }
+        val scored = chunks.mapNotNull { chunk ->
+            var score = 0.0
+            queryTokens.forEach { token ->
+                val frequency = chunk.tokens.count { it == token }
+                if (frequency > 0) {
+                    val df = documentFrequency[token] ?: 0
+                    val idf = kotlin.math.ln(1.0 + (chunks.size - df + 0.5) / (df + 0.5))
+                    val lengthNorm = frequency * 2.2 /
+                        (frequency + 1.2 * (0.25 + 0.75 * chunk.tokens.size / averageLength))
+                    score += idf * lengthNorm
+                    if (token in tokenize(chunk.doc.title)) score += 1.1
+                }
             }
-        }.sortedByDescending { (doc, _) ->
-            val haystack = normalize(doc.title + " " + doc.text)
-            tokens.sumOf { token -> haystack.windowed(token.length).count { it == token }.coerceAtMost(8) }
-        }.take(limit)
+            if (score <= 0.0) null else Triple(chunk, score, queryTokens.count { it in chunk.tokens })
+        }.sortedByDescending { it.second }
+
+        return scored.distinctBy { it.first.doc.id }.take(limit).map { (chunk, score, matched) ->
+            val excerpt = chunk.text.trim().take(1100)
+            chunk.doc to excerpt
+        }
     }
+
+    fun topConcepts(context: Context, limit: Int = 12): List<Pair<String, Int>> {
+        val stopWords = setOf("ve", "veya", "ama", "fakat", "icin", "ile", "bir", "bu", "su", "şu",
+            "olan", "olarak", "daha", "gibi", "kadar", "çok", "az", "the", "and", "for", "with",
+            "from", "that", "this", "are", "was", "were", "have", "has", "not")
+        return list(context).flatMap { tokenize(it.title + " " + it.text) }
+            .filter { it.length >= 4 && it !in stopWords }
+            .groupingBy { it }.eachCount()
+            .entries.sortedByDescending { it.value }
+            .take(limit).map { it.key to it.value }
+    }
+
+    private fun tokenize(value: String): List<String> = normalize(value)
+        .split(Regex("[^\\p{L}\\p{N}]+"))
+        .filter { it.length >= 3 }
 
     private fun normalize(value: String): String = value.lowercase(Locale("tr", "TR"))
         .replace('ı', 'i').replace('ğ', 'g').replace('ü', 'u')
