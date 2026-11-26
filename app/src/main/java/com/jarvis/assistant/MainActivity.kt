@@ -413,7 +413,8 @@ class MainActivity : ComponentActivity() {
                 runOnUiThread { runCatching { startActivity(Intent(AlarmClock.ACTION_SET_ALARM)) } }
                 "Alarm kurma ekranını açıyorum."
             }
-            "hafıza" in q || "hafiza" in q -> "Kişisel hafızanı Merkez ekranındaki Hafıza bölümünden yönetebilirsin."
+            "hafıza" in q || "hafiza" in q -> if (savedMemories.isEmpty()) "Kişisel hafızan henüz boş." else
+                "Cihazındaki kişisel hafıza notları:\n" + savedMemories.takeLast(12).joinToString("\n") { "• " + it.take(400) }
             "görev" in q || "gorev" in q -> "Görev modülünü sonraki aşamaya bıraktık; şu an etkin değil."
             else -> {
                 val localDocuments = KnowledgeStore.search(this, command, 2)
