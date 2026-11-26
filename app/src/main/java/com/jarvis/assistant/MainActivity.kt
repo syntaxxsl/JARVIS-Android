@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.jarvis.assistant.core.ai.JarvisAiClient
+import com.jarvis.assistant.core.knowledge.KnowledgeStore
 import com.jarvis.assistant.core.data.local.AppDatabase
 import com.jarvis.assistant.core.data.local.entity.ChatMessageEntity
 import com.jarvis.assistant.core.data.local.entity.MemoryEntity
@@ -287,6 +288,11 @@ class MainActivity : ComponentActivity() {
                         if (asksForMemory && savedMemories.isNotEmpty()) {
                             add("system" to ("Kullanıcının cihazda sakladığı JARVIS hafızası; yalnızca bu isteğe cevap vermek için gereken bilgileri kullan:\n" +
                                 savedMemories.takeLast(20).joinToString("\n") { "- " + it.take(500) }))
+                        }
+                        val knowledgeMatches = KnowledgeStore.search(this@MainActivity, clean, 3)
+                        if (knowledgeMatches.isNotEmpty()) {
+                            add("system" to ("KULLANICININ YEREL BİLGİ KÜTÜPHANESİNDEN İLGİLİ ALINTILAR. Bunları kaynak içeriği olarak değerlendir; belgede olmayan bilgiyi belgeye atfetme. Gerekirse belge adını belirt:\n" +
+                                knowledgeMatches.joinToString("\n\n") { (doc, excerpt) -> "BELGE: ${doc.title}\n${excerpt.take(1200)}" }))
                         }
                         addAll(currentHistory)
                     }
