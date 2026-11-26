@@ -60,6 +60,8 @@ import org.json.JSONArray
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 
 private data class EvolutionFile(val uri: Uri, val name: String, val text: String)
@@ -111,20 +113,29 @@ fun EvolutionCenterScreen(
     }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-        uris.forEach { uri ->
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        if (uris.isNotEmpty()) {
+            scope.launch {
+                val loadedFiles = withContext(Dispatchers.IO) {
+                    uris.mapNotNull { uri ->
+                        runCatching {
+                            context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        val name = queryDisplayName(context, uri)
+                        val text = runCatching {
+                            context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText().take(1_000_000) }.orEmpty()
+                        }.getOrDefault("")
+                        if (text.isNotBlank()) EvolutionFile(uri, name, text) else null
+                    }
+                }
+                loadedFiles.forEach { loaded ->
+                    if (files.none { it.uri == loaded.uri }) files.add(loaded)
+                }
+                if (files.size >= 2) {
+                    val a = files[files.lastIndex - 1]
+                    val b = files[files.lastIndex]
+                    diffReport = withContext(Dispatchers.Default) { compareText(a, b) }
+                }
             }
-            val name = queryDisplayName(context, uri)
-            val text = runCatching {
-                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText().take(1_000_000) }.orEmpty()
-            }.getOrDefault("")
-            if (text.isNotBlank() && files.none { it.uri == uri }) files.add(EvolutionFile(uri, name, text))
-        }
-        if (files.size >= 2) {
-            val a = files[files.lastIndex - 1]
-            val b = files[files.lastIndex]
-            diffReport = compareText(a, b)
         }
     }
 
@@ -360,8 +371,10 @@ fun EvolutionCenterScreen(
                 Text("Seçilen kaynaklarda TODO/FIXME işaretleri, aşırı uzun satırlar ve olası gömülü anahtar kalıpları için yerel statik tarama.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
                 Button(onClick = {
                     scanning = true
-                    report = runCodeAudit(files.toList())
-                    scanning = false
+                    scope.launch {
+                        report = withContext(Dispatchers.Default) { runCodeAudit(files.toList()) }
+                        scanning = false
+                    }
                 }, enabled = files.isNotEmpty() && !scanning, modifier = Modifier.fillMaxWidth()) {
                     androidx.compose.material3.Icon(Icons.Default.Code, null); Text(" Kodu tara")
                 }
