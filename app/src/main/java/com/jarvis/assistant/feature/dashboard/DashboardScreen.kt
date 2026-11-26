@@ -196,6 +196,9 @@ fun DashboardScreen(
                                     MiniModule("PDF / OCR ANALİZİ", Icons.Default.DocumentScanner, Modifier.fillMaxWidth()) { page = "documents" }
                                 }
                                 item {
+                                    MiniModule("JARVIS EVOLUTION", Icons.Default.AutoAwesome, Modifier.fillMaxWidth()) { page = "evolution" }
+                                }
+                                item {
                                     HudCard {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(Icons.Default.Timeline, null, tint = JarvisCyan)
@@ -514,7 +517,9 @@ fun DashboardScreen(
                             item { QuickCard("Belge zekâsı", "PDF ve görsellerden metin çıkar", Icons.Default.DocumentScanner) { page = "documents" } }
                             item { QuickCard("AI yönlendirici", "Birincil ve yedek AI sağlayıcılarını yapılandır", Icons.Default.AccountTree) { page = "router" } }
                             item { QuickCard("Kontrol merkezi", "Sistem izinleri ve cihaz kontrolleri", Icons.Default.Tune) { page = "control" } }
+                            item { QuickCard("JARVIS Evolution", "Eksik özellik analizi, kod tarama, dosya gezgini, fark ve sürüm geçmişi", Icons.Default.AutoAwesome) { page = "evolution" } }
                         }
+                        "evolution" -> EvolutionCenterScreen()
                         "router" -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             item { SectionHeading("JARVIS CONTROL", "AI yönlendirici ve sistem yönetimi") }
                             item {
