@@ -10,14 +10,16 @@ import android.os.ParcelFileDescriptor
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 object DocumentAnalyzer {
-    suspend fun analyze(context: Context, uri: Uri): String {
+    suspend fun analyze(context: Context, uri: Uri): String = withContext(Dispatchers.IO) {
         val mime = context.contentResolver.getType(uri).orEmpty()
-        return if (mime == "application/pdf" || uri.toString().endsWith(".pdf", true)) {
+        if (mime == "application/pdf" || uri.toString().endsWith(".pdf", true)) {
             analyzePdf(context, uri)
         } else {
             val image = InputImage.fromFilePath(context, uri)
@@ -35,17 +37,21 @@ object DocumentAnalyzer {
                 val pagesToRead = minOf(renderer.pageCount, MAX_PDF_PAGES)
                 for (index in 0 until pagesToRead) {
                     renderer.openPage(index).use { page ->
-                        val scale = minOf(2.0f, 1800f / page.width.coerceAtLeast(1))
+                        val maxDimension = maxOf(page.width, page.height).coerceAtLeast(1)
+                        val scale = minOf(2.0f, 1800f / maxDimension)
                         val bitmap = Bitmap.createBitmap(
                             (page.width * scale).toInt().coerceAtLeast(1),
                             (page.height * scale).toInt().coerceAtLeast(1),
                             Bitmap.Config.ARGB_8888
                         )
-                        bitmap.eraseColor(Color.WHITE)
-                        page.render(bitmap, null, Matrix(), PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                        output.append("\n\n--- SAYFA ${index + 1} ---\n")
-                        output.append(recognize(InputImage.fromBitmap(bitmap, 0)))
-                        bitmap.recycle()
+                        try {
+                            bitmap.eraseColor(Color.WHITE)
+                            page.render(bitmap, null, Matrix(), PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            output.append("\n\n--- SAYFA ${index + 1} ---\n")
+                            output.append(recognize(InputImage.fromBitmap(bitmap, 0)))
+                        } finally {
+                            bitmap.recycle()
+                        }
                     }
                 }
                 if (renderer.pageCount > pagesToRead) {
