@@ -12,7 +12,11 @@ object NotificationReplyBridge {
     private val replyActions = ConcurrentHashMap<String, Notification.Action>()
 
     fun register(key: String, action: Notification.Action?) {
-        if (action?.remoteInputs?.isNotEmpty() == true) replyActions[key] = action
+        if (action?.remoteInputs?.isNotEmpty() == true) {
+            replyActions[key] = action
+        } else {
+            replyActions.remove(key)
+        }
     }
 
     fun remove(key: String) {
