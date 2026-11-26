@@ -183,6 +183,8 @@ fun GitHubWorkspacePanel() {
     var selectedPath by remember { mutableStateOf("") }
     var editor by remember { mutableStateOf("") }
     var fileSha by remember { mutableStateOf("") }
+    var newFilePath by remember { mutableStateOf("") }
+    var newFileContent by remember { mutableStateOf("") }
     var commitMessage by remember { mutableStateOf("JARVIS: update source file") }
     var prTitle by remember { mutableStateOf("JARVIS code changes") }
     var prBody by remember { mutableStateOf("JARVIS tarafından hazırlanan değişiklikler. Birleştirmeden önce CI ve kod incelemesini kontrol edin.") }
@@ -268,6 +270,19 @@ fun GitHubWorkspacePanel() {
                     }
                 }, enabled = !busy && selectedPath.isNotBlank() && commitMessage.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Değişikliği GitHub'a commit et") }
             }
+            Text("YENİ DOSYA OLUŞTUR", color = JarvisCyan, fontWeight = FontWeight.Bold)
+            OutlinedTextField(newFilePath, { newFilePath = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Depo içi dosya yolu (ör. app/.../NewFeature.kt)") }, singleLine = true)
+            OutlinedTextField(newFileContent, { newFileContent = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Yeni dosyanın içeriği") }, minLines = 4, maxLines = 10)
+            Button(onClick = {
+                val path = newFilePath.trim(); val data = newFileContent; val branch = selectedBranch
+                perform("Yeni dosya commit ediliyor") {
+                    val url = JarvisGitHub.saveFile(context, path, data, branch, "", "JARVIS: add $path")
+                    files = JarvisGitHub.tree(context, branch)
+                    newFilePath = ""; newFileContent = ""
+                    "Yeni dosya oluşturuldu. $url"
+                }
+            }, enabled = !busy && newFilePath.isNotBlank() && newFileContent.isNotBlank() && !newFilePath.startsWith("/") && !newFilePath.contains(".."), modifier = Modifier.fillMaxWidth()) { Text("Yeni dosyayı GitHub’a ekle") }
+
             Text("PULL REQUEST / DEĞİŞİKLİK KARŞILAŞTIRMA", color = JarvisCyan, fontWeight = FontWeight.Bold)
             OutlinedTextField(prTitle, { prTitle = it }, modifier = Modifier.fillMaxWidth(), label = { Text("PR başlığı") })
             OutlinedTextField(prBody, { prBody = it }, modifier = Modifier.fillMaxWidth(), label = { Text("PR açıklaması") }, minLines = 2)
