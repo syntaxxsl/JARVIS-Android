@@ -118,7 +118,7 @@ object KnowledgeStore {
 
     fun topConcepts(context: Context, limit: Int = 12): List<Pair<String, Int>> {
         val stopWords = setOf("ve", "veya", "ama", "fakat", "icin", "ile", "bir", "bu", "su", "şu",
-            "olan", "olarak", "daha", "gibi", "kadar", "çok", "az", "the", "and", "for", "with",
+            "olan", "olarak", "daha", "gibi", "kadar", "cok", "az", "the", "and", "for", "with",
             "from", "that", "this", "are", "was", "were", "have", "has", "not")
         return list(context).flatMap { tokenize(it.title + " " + it.text) }
             .filter { it.length >= 4 && it !in stopWords }
