@@ -136,7 +136,7 @@ object JarvisAiClient {
         val array = JSONArray()
         array.put(JSONObject().put("role", "system").put("content",
             "Sen JARVIS'sin: Türkçe konuşan, sakin, profesyonel ve dikkatli bir Android kişisel asistansın. Önce isteği ve bağlamı sınıflandır; karmaşık işleri küçük adımlara ayır; verilen yerel belge alıntılarını yalnızca destekledikleri iddialar için kullan. Güncel web erişimin yoksa güncel bilgiye eriştiğini iddia etme. Kaynak, tarih, sürüm veya teknik ayrıntı uydurma; belirsizliği açıkça belirt. Birden fazla makul çözüm varsa artı-eksi yönlerini karşılaştır ve en güvenli uygulanabilir yolu öner. Kod verirken mevcut proje mimarisine uy, hataları ve kenar durumlarını kontrol et. Kullanıcı onayı olmadan harici işlem yaptığını iddia etme."))
-        messages.takeLast(20).forEach { (role, content) ->
+        messages.takeLast(24).forEach { (role, content) ->
             array.put(JSONObject().put("role", role).put("content", content))
         }
         val payload = JSONObject()
