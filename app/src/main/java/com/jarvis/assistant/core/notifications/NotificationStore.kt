@@ -24,7 +24,7 @@ object NotificationStore {
         )
 
     fun read(context: Context): JSONArray {
-        val secure = securePreferences(context)
+        val secure = runCatching { securePreferences(context) }.getOrElse { return JSONArray() }
         if (!secure.contains(KEY)) {
             val legacy = context.getSharedPreferences(LEGACY_STORE, Context.MODE_PRIVATE)
             val previous = legacy.getString(KEY, null)
@@ -37,11 +37,11 @@ object NotificationStore {
     }
 
     fun write(context: Context, value: JSONArray) {
-        securePreferences(context).edit().putString(KEY, value.toString()).apply()
+        runCatching { securePreferences(context).edit().putString(KEY, value.toString()).apply() }
     }
 
     fun clear(context: Context) {
-        securePreferences(context).edit().remove(KEY).apply()
+        runCatching { securePreferences(context).edit().remove(KEY).apply() }
         context.getSharedPreferences(LEGACY_STORE, Context.MODE_PRIVATE).edit().remove(KEY).apply()
     }
 }
