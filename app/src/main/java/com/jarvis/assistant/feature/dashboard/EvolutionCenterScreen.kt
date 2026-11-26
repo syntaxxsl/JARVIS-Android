@@ -371,8 +371,9 @@ fun EvolutionCenterScreen(
                 Text("Seçilen kaynaklarda TODO/FIXME işaretleri, aşırı uzun satırlar ve olası gömülü anahtar kalıpları için yerel statik tarama.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
                 Button(onClick = {
                     scanning = true
+                    val snapshot = files.toList()
                     scope.launch {
-                        report = withContext(Dispatchers.Default) { runCodeAudit(files.toList()) }
+                        report = withContext(Dispatchers.Default) { runCodeAudit(snapshot) }
                         scanning = false
                     }
                 }, enabled = files.isNotEmpty() && !scanning, modifier = Modifier.fillMaxWidth()) {
