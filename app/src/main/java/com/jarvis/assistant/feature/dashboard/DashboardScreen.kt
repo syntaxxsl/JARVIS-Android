@@ -509,17 +509,7 @@ fun DashboardScreen(
                                 }
                             }
                         }
-                        "modules" -> LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                            item { SectionHeading("JARVIS MODÜLLERİ", "Tüm yetenekler tek bir yerde") }
-                            item { QuickCard("Uzman ajanlar", "Araştırma, yazılım, belge, öğrenme ve yaratıcı ajanlar", Icons.Default.Hub) { page = "agents" } }
-                            item { QuickCard("Telefon ve uygulamalar", "Uygulama başlatma, ekran etkileşimi ve sistem erişimi", Icons.Default.Smartphone) { page = "phone" } }
-                            item { QuickCard("Bildirim merkezi", "İzin verilen bildirimleri görüntüle ve yanıt taslağı hazırla", Icons.Default.Notifications) { page = "notifications" } }
-                            item { QuickCard("Kişisel hafıza", "Cihazda saklanan notları görüntüle ve yönet", Icons.Default.Psychology) { page = "memory" } }
-                            item { QuickCard("Belge zekâsı", "PDF ve görsellerden metin çıkar", Icons.Default.DocumentScanner) { page = "documents" } }
-                            item { QuickCard("AI yönlendirici", "Birincil ve yedek AI sağlayıcılarını yapılandır", Icons.Default.AccountTree) { page = "router" } }
-                            item { QuickCard("Kontrol merkezi", "Sistem izinleri ve cihaz kontrolleri", Icons.Default.Tune) { page = "control" } }
-                            item { QuickCard("JARVIS Evolution", "Eksik özellik analizi, kod tarama, dosya gezgini, fark ve sürüm geçmişi", Icons.Default.AutoAwesome) { page = "evolution" } }
-                        }
+                        "modules" -> ModuleHubScreen(onNavigate = { destination -> page = destination })
                         "evolution" -> EvolutionCenterScreen(
                             onAskAi = { prompt, onResult -> onSendPress(prompt, onResult) }
                         )
