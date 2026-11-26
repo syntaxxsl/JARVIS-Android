@@ -407,7 +407,26 @@ class MainActivity : ComponentActivity() {
             }
             "hafıza" in q || "hafiza" in q -> "Kişisel hafızanı Merkez ekranındaki Hafıza bölümünden yönetebilirsin."
             "görev" in q || "gorev" in q -> "Görev modülünü sonraki aşamaya bıraktık; şu an etkin değil."
-            else -> "Komutunu aldım. Bu işlem için henüz çevrimdışı bir yetenek tanımlı değil."
+            else -> {
+                val localDocuments = KnowledgeStore.search(this, command, 2)
+                val normalized = q.replace('ı', 'i').replace('ğ', 'g').replace('ü', 'u')
+                    .replace('ş', 's').replace('ö', 'o').replace('ç', 'c')
+                val terms = normalized.split(Regex("[^\\\\p{L}\\\\p{N}]+")).filter { it.length >= 3 }.distinct()
+                val localNotes = savedMemories.mapNotNull { note ->
+                    val candidate = note.lowercase(java.util.Locale("tr", "TR"))
+                        .replace('ı', 'i').replace('ğ', 'g').replace('ü', 'u')
+                        .replace('ş', 's').replace('ö', 'o').replace('ç', 'c')
+                    val score = terms.count { candidate.contains(it) }
+                    if (score > 0) note to score else null
+                }.sortedByDescending { it.second }.take(3)
+                when {
+                    localDocuments.isNotEmpty() -> "Çevrimdışı bilgi kütüphanemde bulduklarım:\\n" +
+                        localDocuments.joinToString("\\n\\n") { (doc, excerpt) -> "BELGE: " + doc.title + "\\n" + excerpt.take(650) }
+                    localNotes.isNotEmpty() -> "Yerel hafızanda ilgili bulduğum notlar:\\n" +
+                        localNotes.joinToString("\\n") { "• " + it.first.take(500) }
+                    else -> "Komutunu aldım. Çevrimdışıyım; bu istek için yerel hafızamda veya bilgi kütüphanemde eşleşen içerik bulamadım."
+                }
+            }
         }
     }
 
