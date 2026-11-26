@@ -61,6 +61,7 @@ import java.util.Locale
 
 private data class EvolutionFile(val uri: Uri, val name: String, val text: String)
 private data class Diagnostic(val name: String, val detail: String, val passed: Boolean)
+private data class BuildRun(val number: Int, val status: String, val conclusion: String, val sha: String, val url: String)
 
 @Composable
 fun EvolutionCenterScreen(
@@ -76,6 +77,8 @@ fun EvolutionCenterScreen(
     var scanning by remember { mutableStateOf(false) }
     var aiReview by remember { mutableStateOf("Henüz AI kod incelemesi yapılmadı.") }
     var aiReviewLoading by remember { mutableStateOf(false) }
+    var buildRuns by remember { mutableStateOf(emptyList<BuildRun>()) }
+    var buildHistoryStatus by remember { mutableStateOf("GitHub Actions geçmişi yükleniyor...") }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         uris.forEach { uri ->
@@ -110,6 +113,37 @@ fun EvolutionCenterScreen(
         history.clear()
         for (i in 0 until stored.length()) history.add(stored.optString(i))
         diagnostics = runDiagnostics(context)
+        val fetchedRuns = runCatching {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val connection = java.net.URL("https://api.github.com/repos/syntaxxsl/JARVIS-Android/actions/runs?per_page=8").openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 8000
+                connection.readTimeout = 10000
+                connection.setRequestProperty("Accept", "application/vnd.github+json")
+                connection.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
+                try {
+                    val body = connection.inputStream.bufferedReader().use { it.readText() }
+                    val array = org.json.JSONObject(body).optJSONArray("workflow_runs") ?: org.json.JSONArray()
+                    (0 until array.length()).mapNotNull { index ->
+                        val item = array.optJSONObject(index) ?: return@mapNotNull null
+                        BuildRun(
+                            number = item.optInt("run_number"),
+                            status = item.optString("status"),
+                            conclusion = item.optString("conclusion", ""),
+                            sha = item.optString("head_sha").take(7),
+                            url = item.optString("html_url")
+                        )
+                    }
+                } finally {
+                    connection.disconnect()
+                }
+            }
+        }
+        fetchedRuns.onSuccess {
+            buildRuns = it
+            buildHistoryStatus = if (it.isEmpty()) "Henüz GitHub Actions derlemesi bulunamadı." else "Son ${it.size} GitHub Actions çalışması."
+        }.onFailure {
+            buildHistoryStatus = "Derleme geçmişi alınamadı: ${it.message ?: "ağ hatası"}"
+        }
     }
 
     LazyColumn(
@@ -236,7 +270,23 @@ fun EvolutionCenterScreen(
                 }
                 if (history.isEmpty()) Text("Henüz sürüm kaydı yok.", color = JarvisTextDim)
                 history.reversed().forEach { Text(it, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall) }
-                Text("Bu liste cihazda açılan uygulama sürümlerini kaydeder; GitHub Actions APK arşivi henüz bağlanmadı.", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                Text("Cihazda açılan sürüm kayıtları ve GitHub Actions derlemeleri aşağıda ayrı gösterilir.", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                Divider(color = JarvisCyan.copy(alpha = .20f))
+                Text("GITHUB ACTIONS / DERLEME GEÇMİŞİ", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                Text(buildHistoryStatus, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                buildRuns.forEach { run ->
+                    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Text("Build #${run.number} • ${run.conclusion.ifBlank { run.status }} • ${run.sha}", color = JarvisText, style = MaterialTheme.typography.bodySmall)
+                        OutlinedButton(onClick = {
+                            runCatching {
+                                context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(run.url)))
+                            }
+                        }, modifier = Modifier.fillMaxWidth()) { Text("Derleme ayrıntılarını aç") }
+                    }
+                }
+                OutlinedButton(onClick = {
+                    runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse("https://github.com/syntaxxsl/JARVIS-Android/actions"))) }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Tüm APK ve test geçmişini GitHub'da aç") }
             }
         }
         item {
