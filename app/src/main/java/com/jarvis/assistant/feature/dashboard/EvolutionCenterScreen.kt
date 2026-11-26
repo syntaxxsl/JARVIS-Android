@@ -396,7 +396,7 @@ fun EvolutionCenterScreen(
                 )
                 Button(
                     onClick = {
-                        val source = files.lastOrNull() ?: return@Button
+                        val source = selectedFile ?: files.lastOrNull() ?: return@Button
                         patchLoading = true
                         patchDraft = ""
                         patchStatus = source.name + " için düzeltme hazırlanıyor..."
@@ -423,7 +423,9 @@ fun EvolutionCenterScreen(
                     )
                     OutlinedButton(
                         onClick = {
-                            val name = (files.lastOrNull()?.name ?: "jarvis-source").substringBeforeLast('.') + ".jarvis-proposed.txt"
+                            val sourceName = (selectedFile ?: files.lastOrNull())?.name ?: "jarvis-source"
+                            val extension = if (sourceName.endsWith(".kt", true)) ".jarvis-proposed.kt" else ".jarvis-proposed.txt"
+                            val name = sourceName.substringBeforeLast('.') + extension
                             savePatchLauncher.launch(name)
                         },
                         modifier = Modifier.fillMaxWidth()
