@@ -34,6 +34,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
+import com.jarvis.assistant.core.ai.JarvisAiClient
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,6 +81,9 @@ fun DashboardScreen(
     var memoryText by rememberSaveable { mutableStateOf("") }
     var showStartup by rememberSaveable { mutableStateOf(true) }
     var apiTestStatus by rememberSaveable { mutableStateOf("Henüz bağlantı testi yapılmadı.") }
+    var modelListStatus by rememberSaveable { mutableStateOf("Model listesi henüz alınmadı.") }
+    var availableModels by remember { mutableStateOf(emptyList<String>()) }
+    val modelScope = rememberCoroutineScope()
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(760); showStartup = false }
     val chat = remember { mutableStateListOf<ChatLine>() }
     LaunchedEffect(chatItems.size) {
@@ -547,6 +552,38 @@ fun DashboardScreen(
                                         OutlinedButton(onClick = { baseUrl = "http://127.0.0.1:11434/v1"; model = "llama3.2" }, modifier = Modifier.weight(1f)) { Text("Yerel Ollama") }
                                     }
                                     Text("Hugging Face için HF token ve erişimi açık model gerekir. Yerel Ollama profili yalnızca aynı telefondaki localhost servisine bağlanır; telefonda Ollama/uyumlu sunucu ayrıca çalışıyor olmalıdır.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                            item {
+                                HudCard {
+                                    Text("SAĞLAYICI MODEL KATALOĞU", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                                    Text("Seçili birincil API adresinin /models uç noktasından erişilebilir modelleri alır. Sağlayıcı bu uç noktayı desteklemiyorsa model adını elle girebilirsin.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                    OutlinedButton(
+                                        onClick = {
+                                            modelListStatus = "Model listesi alınıyor..."
+                                            availableModels = emptyList()
+                                            modelScope.launch {
+                                                runCatching { JarvisAiClient.listModels(apiKey, baseUrl) }
+                                                    .onSuccess {
+                                                        availableModels = it
+                                                        modelListStatus = "${it.size} model bulundu. Seçmek için adına dokun."
+                                                    }
+                                                    .onFailure {
+                                                        modelListStatus = "Model listesi alınamadı: ${it.message ?: "uç nokta desteklenmiyor"}"
+                                                    }
+                                            }
+                                        },
+                                        enabled = apiKey.isNotBlank() && baseUrl.isNotBlank(),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(Icons.Default.CloudDownload, null); Spacer(Modifier.width(8.dp)); Text("Modelleri getir")
+                                    }
+                                    Text(modelListStatus, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                                    availableModels.take(30).forEach { available ->
+                                        TextButton(onClick = { model = available }, modifier = Modifier.fillMaxWidth()) {
+                                            Text(if (model == available) "✓  " + available else available, color = if (model == available) JarvisCyan else JarvisText)
+                                        }
+                                    }
                                 }
                             }
                             item { Text("BİRİNCİL SAĞLAYICI", color = JarvisCyan, fontWeight = FontWeight.Bold) }
