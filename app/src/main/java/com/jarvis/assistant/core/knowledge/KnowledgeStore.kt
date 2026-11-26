@@ -18,8 +18,8 @@ data class KnowledgeDocument(
 object KnowledgeStore {
     private const val PREFS = "jarvis_knowledge_v1"
     private const val KEY_DOCS = "documents"
-    private const val MAX_DOCUMENTS = 50
-    private const val MAX_CHARS_PER_DOCUMENT = 60_000
+    private const val MAX_DOCUMENTS = 20
+    private const val MAX_CHARS_PER_DOCUMENT = 20_000
 
     private fun prefs(context: Context) = runCatching {
         val master = MasterKey.Builder(context.applicationContext)
