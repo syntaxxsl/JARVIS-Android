@@ -270,6 +270,7 @@ fun EvolutionCenterScreen(
             Text("Proje analizi, kod inceleme, değişiklik karşılaştırma ve sürüm takibi.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
         }
         item { HudCard { RemoteUpdatePanel() } }
+        item { HudCard { GitHubWorkspacePanel() } }
         item {
             HudCard {
                 Row {
