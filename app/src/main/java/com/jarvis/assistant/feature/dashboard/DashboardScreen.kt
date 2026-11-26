@@ -651,8 +651,6 @@ fun DashboardScreen(
 
 @Composable
 private fun HudBackdrop() {
-    val transition = rememberInfiniteTransition(label = "hud-background")
-    val scan by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(4200, easing = LinearEasing)), label = "scan")
     Canvas(Modifier.fillMaxSize()) {
         val step = 34.dp.toPx()
         for (x in 0..(size.width / step).toInt()) {
@@ -663,9 +661,6 @@ private fun HudBackdrop() {
             drawLine(JarvisCyan.copy(alpha = .035f), androidx.compose.ui.geometry.Offset(0f, y * step),
                 androidx.compose.ui.geometry.Offset(size.width, y * step), 1f)
         }
-        val scanY = size.height * scan
-        drawLine(JarvisCyan.copy(alpha = .12f), androidx.compose.ui.geometry.Offset(0f, scanY),
-            androidx.compose.ui.geometry.Offset(size.width, scanY), 2.dp.toPx())
     }
 }
 
@@ -796,7 +791,7 @@ private fun LiveDeviceStatusCard() {
     LaunchedEffect(Unit) {
         while (true) {
             snapshot = readDeviceSnapshot(context)
-            kotlinx.coroutines.delay(5000)
+            kotlinx.coroutines.delay(15000)
         }
     }
     val ramPercent = if (snapshot.ramTotal > 0) (snapshot.ramUsed * 100 / snapshot.ramTotal).toInt() else 0
@@ -818,7 +813,7 @@ private fun LiveDeviceStatusCard() {
             color = JarvisTextDim,
             style = MaterialTheme.typography.labelSmall
         )
-        Text("Veriler bu cihazdan 5 saniyede bir okunur.", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+        Text("Veriler pil tüketimini azaltmak için 15 saniyede bir yenilenir.", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
     }
 }
 
@@ -829,7 +824,7 @@ private fun PhoneActionHistoryPanel() {
     LaunchedEffect(Unit) {
         while (true) {
             entries = PhoneActionHistory.read(context)
-            kotlinx.coroutines.delay(2500)
+            kotlinx.coroutines.delay(10000)
         }
     }
     HudCard {
