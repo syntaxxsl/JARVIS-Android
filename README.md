@@ -50,10 +50,14 @@ GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığı
 - Yanıt eylemi sunan bildirimler için AI taslağı oluşturma.
 - Kullanıcı taslağı görüp onayladıktan sonra Android RemoteInput üzerinden yanıt gönderme.
 
-### Hafıza ve belgeler
+### Hafıza, bilgi kütüphanesi ve belgeler
 - Room ile yerel kişisel notları ekleme, düzenleme ve silme.
+- Şifreli yerel bilgi kütüphanesine PDF, görsel ve metin dosyaları ekleme; en fazla 20 belge ve belge başına 20.000 karakter sınırı.
+- Soru metnine göre basit yerel anahtar-kelime eşleştirmesiyle ilgili belge bölümlerini bulma; eşleşen kısa alıntıları AI isteğine bağlam olarak ekleme.
 - PDF'in ilk sekiz sayfasını render edip OCR ile metne dönüştürme.
 - Görsellerden ML Kit OCR ile metin çıkarma.
+
+**Gizlilik:** Belgeler cihazda şifreli tercihler alanında saklanır. İlgili alıntılar çevrimiçi AI yanıtı istendiğinde yapılandırılmış sağlayıcıya gönderilebilir; hassas dosyaları eklemeden önce bunu dikkate al. Bu sürüm gerçek embedding tabanlı semantik arama değil, anahtar-kelime tabanlı yerel retrieval kullanır.
 
 ### Mission Control
 - Hedefi en fazla beş sıralı alt göreve ayıran AI planlama akışı.
@@ -76,7 +80,9 @@ GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığı
 
 - Her zaman dinleyen uyandırma kelimesi ve güvenilir arka plan ses servisi.
 - Tam çevrimdışı büyük dil modeli.
-- Araştırma, geliştirici, planlayıcı ve telefon ajanları için bağımsız araç kullanan otonom yürütme altyapısı. Ajan kartları sohbet istemi hazırlar; Mission Control sınırlı ve sıralı AI görev akışı sağlar.
+- Araştırma, geliştirici, planlayıcı ve telefon ajanları için bağımsız araç kullanan otonom yürütme altyapısı.
+- İnternet kaynaklarını otomatik tarayan, kaynak güvenilirliğini puanlayan ve planlı biçimde güncelleyen tam Deep Research motoru.
+- Embedding tabanlı vektör arama, reranking ve kişisel bilgi grafiği. Ajan kartları sohbet istemi hazırlar; Mission Control sınırlı ve sıralı AI görev akışı sağlar.
 - Uygulama içinden GitHub kaynak kodunu düzenleme, commit/PR açma ve otomatik geri alma.
 - Tam proje dosya yöneticisi, video analizi, takvim senkronizasyonu ve gelişmiş görev arayüzü.
 - Otomatik UI/instrumentation test kapsamı ve kapsamlı birim test paketi.
