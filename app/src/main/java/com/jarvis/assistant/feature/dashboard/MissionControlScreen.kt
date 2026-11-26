@@ -90,14 +90,14 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            SectionHeading("STARK MISSION CONTROL", "Hedefleri planla ve kontrollü yürüt")
+            MissionSectionHeading("STARK MISSION CONTROL", "Hedefleri planla ve kontrollü yürüt")
             Text(
                 "JARVIS hedefi en fazla 5 alt göreve böler. Her adım AI üzerinden sırayla çalışır; telefon ayarları, mesaj gönderme veya dosya değiştirme gibi harici işlemler otomatik yapılmaz.",
                 color = JarvisTextDim
             )
         }
         item {
-            HudCard {
+            MissionHudCard {
                 Text("GÖREV HEDEFİ", color = JarvisCyan, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
                     value = goal,
@@ -237,5 +237,28 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
             Spacer(Modifier.height(8.dp))
             Text("Not: Bu merkez AI adımlarını sırayla çalıştırır. Gerçek GitHub değişikliği, mesaj gönderimi veya sistem işlemi için ayrı araç entegrasyonu ve kullanıcı onayı gerekir.", color = Color.Gray)
         }
+    }
+}
+
+@Composable
+private fun MissionSectionHeading(title: String, subtitle: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(title, color = JarvisCyan, fontWeight = FontWeight.Bold)
+        Text(subtitle, color = JarvisTextDim)
+    }
+}
+
+@Composable
+private fun MissionHudCard(content: @Composable Column.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = JarvisPanel)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            content = content
+        )
     }
 }
