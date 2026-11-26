@@ -55,6 +55,9 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private fun readSecureString(key: String, defaultValue: String = ""): String =
+        runCatching { prefs.getString(key, defaultValue).orEmpty() }.getOrDefault(defaultValue)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         database = AppDatabase.getInstance(this)
@@ -100,12 +103,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             JarvisTheme {
                 DashboardScreen(
-                    initialApiKey = runCatching { prefs.getString("api_key", "").orEmpty() }.getOrDefault(""),
-                    initialModel = runCatching { prefs.getString("model", "openrouter/free").orEmpty() }.getOrDefault("openrouter/free"),
-                    initialBaseUrl = runCatching { prefs.getString("base_url", "https://openrouter.ai/api/v1").orEmpty() }.getOrDefault("https://openrouter.ai/api/v1"),
-                    initialBackupApiKey = runCatching { prefs.getString("backup_api_key", "").orEmpty() }.getOrDefault(""),
-                    initialBackupModel = runCatching { prefs.getString("backup_model", "llama-3.3-70b-versatile").orEmpty() }.getOrDefault("llama-3.3-70b-versatile"),
-                    initialBackupBaseUrl = runCatching { prefs.getString("backup_base_url", "https://api.groq.com/openai/v1").orEmpty() }.getOrDefault("https://api.groq.com/openai/v1"),
+                    initialApiKey = runCatching { readSecureString("api_key") }.getOrDefault(""),
+                    initialModel = runCatching { readSecureString("model", "openrouter/free") }.getOrDefault("openrouter/free"),
+                    initialBaseUrl = runCatching { readSecureString("base_url", "https://openrouter.ai/api/v1") }.getOrDefault("https://openrouter.ai/api/v1"),
+                    initialBackupApiKey = runCatching { readSecureString("backup_api_key") }.getOrDefault(""),
+                    initialBackupModel = runCatching { readSecureString("backup_model", "llama-3.3-70b-versatile") }.getOrDefault("llama-3.3-70b-versatile"),
+                    initialBackupBaseUrl = runCatching { readSecureString("backup_base_url", "https://api.groq.com/openai/v1") }.getOrDefault("https://api.groq.com/openai/v1"),
                     memoryItems = savedMemories,
                     taskItems = savedTasks,
                     chatItems = savedChat,
@@ -321,8 +324,8 @@ class MainActivity : ComponentActivity() {
                 throw e
             } catch (e: Exception) {
                 offlineReply(clean) + if (
-                    prefs.getString("api_key", "").isNullOrBlank() &&
-                    prefs.getString("backup_api_key", "").isNullOrBlank()
+                    readSecureString("api_key").isBlank() &&
+                    readSecureString("backup_api_key").isBlank()
                 ) {
                     "\n\nOnline AI için AI Router bölümünden birincil veya yedek sağlayıcı anahtarı ekleyebilirsin."
                 } else "\n\nAI bağlantı notu: ${e.message ?: "bağlantı hatası"}"
