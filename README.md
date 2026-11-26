@@ -62,9 +62,17 @@ GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığı
 ### Mission Control
 - Hedefi en fazla beş sıralı alt göreve ayıran AI planlama akışı.
 - Kullanıcı planı gözden geçirdikten sonra adımları sırayla AI üzerinden çalıştırma.
+- İsteğe bağlı ikinci geçiş Critic kontrolü: her adımın sonucunu ayrı bir denetim istemiyle mantık, eksik varsayım ve güvenlik açısından gözden geçirme.
 - Adım durumu, sonuç özeti, durdurma ve cihazda sınırlı geçmiş kaydı.
 
 **Sınırlar:** Bu ilk Mission Control sürümü tek yapılandırılmış AI sohbet akışını kullanır; bağımsız araç kullanan çoklu ajan sistemi değildir. Durdurma, sonraki adımları durdurur; devam eden ağ isteğinin sunucu tarafında geri alınacağını garanti etmez. Harici telefon/GitHub işlemleri otomatik yürütülmez.
+
+### Research Studio
+- Wikipedia Türkçe arama uç noktası ve Crossref akademik yayın metaverisinde paralel olmayan, sırayla kaynak keşfi.
+- Bulunan başlık, kısa özet/metaveri ve kaynak URL'lerini ekranda gösterme.
+- Kaynak bağlamını AI sağlayıcısına göndererek sentez, çelişki ve doğrulanması gereken noktalar raporu oluşturma.
+
+**Sınırlar:** Bu sürüm tam web taraması değildir; yalnızca Wikipedia ve Crossref kayıtlarını sorgular. Crossref sonucu çoğunlukla yayın metaverisidir, tam makale metni değildir. AI sentezi kaynağın tamamının okunduğu anlamına gelmez.
 
 ### JARVIS Evolution
 - Cihaz izinleri, ağ ve depolama için temel öz tanılama.
@@ -81,7 +89,7 @@ GitHub Actions her başarılı derlemede debug APK üretir, dosyanın varlığı
 - Her zaman dinleyen uyandırma kelimesi ve güvenilir arka plan ses servisi.
 - Tam çevrimdışı büyük dil modeli.
 - Araştırma, geliştirici, planlayıcı ve telefon ajanları için bağımsız araç kullanan otonom yürütme altyapısı.
-- İnternet kaynaklarını otomatik tarayan, kaynak güvenilirliğini puanlayan ve planlı biçimde güncelleyen tam Deep Research motoru.
+- İnternet kaynaklarını geniş ölçekte tarayan, kaynak güvenilirliğini bağımsız olarak puanlayan ve planlı biçimde güncelleyen tam Deep Research motoru.
 - Embedding tabanlı vektör arama, reranking ve kişisel bilgi grafiği. Ajan kartları sohbet istemi hazırlar; Mission Control sınırlı ve sıralı AI görev akışı sağlar.
 - Uygulama içinden GitHub kaynak kodunu düzenleme, commit/PR açma ve otomatik geri alma.
 - Tam proje dosya yöneticisi, video analizi, takvim senkronizasyonu ve gelişmiş görev arayüzü.
