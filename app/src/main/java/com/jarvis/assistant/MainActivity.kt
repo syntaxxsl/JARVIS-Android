@@ -303,8 +303,8 @@ class MainActivity : ComponentActivity() {
             "ses ayar" in q -> "sound"
             "uygulama ayar" in q -> "apps"
             "bildirim ayar" in q -> "notifications"
-            listOf("feneri aç", "el fenerini aç", "ışığı aç", "flashlight on",
-                "feneri kapat", "el fenerini kapat", "ışığı kapat", "flashlight off").any(q::contains) -> "torch"
+            listOf("feneri aç", "el fenerini aç", "ışığı aç", "flashlight on").any(q::contains) -> "torch_on"
+            listOf("feneri kapat", "el fenerini kapat", "ışığı kapat", "flashlight off").any(q::contains) -> "torch_off"
             "telefon ayar" in q || q == "ayarları aç" || q == "ayarlar" -> "settings"
             else -> null
         }
