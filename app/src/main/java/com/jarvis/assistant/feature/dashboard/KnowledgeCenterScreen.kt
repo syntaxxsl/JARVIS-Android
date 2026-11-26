@@ -108,7 +108,7 @@ fun KnowledgeCenterScreen() {
             HudCard {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Default.MenuBook, tint = JarvisCyan, contentDescription = null)
-                    Text("YEREL BİLGİ DEPOSU  •  ${documents.size}/50", color = JarvisText, fontWeight = FontWeight.Bold)
+                    Text("YEREL BİLGİ DEPOSU  •  ${documents.size}/20", color = JarvisText, fontWeight = FontWeight.Bold)
                 }
                 Button(onClick = { picker.launch(arrayOf("application/pdf", "image/*", "text/*", "application/json")) },
                     enabled = !importing, modifier = Modifier.fillMaxWidth()) {
