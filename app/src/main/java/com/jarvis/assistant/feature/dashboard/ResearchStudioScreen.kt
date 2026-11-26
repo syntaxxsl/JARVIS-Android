@@ -47,7 +47,7 @@ fun ResearchStudioScreen(onAskAi: (String, (String) -> Unit) -> Unit) {
     var query by remember { mutableStateOf("") }
     var sources by remember { mutableStateOf(emptyList<ResearchSource>()) }
     var summary by remember { mutableStateOf("") }
-    var status by remember { mutableStateOf("Wikipedia Türkçe ve Crossref akademik yayın metaverisinde arama yapar.") }
+    var status by remember { mutableStateOf("Wikipedia Türkçe, Crossref, OpenAlex ve arXiv üzerinde kaynak keşfi yapar.") }
     var loading by remember { mutableStateOf(false) }
     var summarizing by remember { mutableStateOf(false) }
 
@@ -60,7 +60,7 @@ fun ResearchStudioScreen(onAskAi: (String, (String) -> Unit) -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text("STARK RESEARCH LAB", color = JarvisCyan, fontWeight = FontWeight.Bold)
                 Text("Araştırma stüdyosu", color = JarvisText, style = androidx.compose.material3.MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text("Açık kaynaklardan arama yapar, bulunan bağlantıları gösterir ve kaynak metaverisini AI ile özetler. Bu kapsamlı web tarayıcısı değildir; sonuçları kaynak sayfalarından doğrula.", color = JarvisTextDim)
+                Text("Dört açık kaynaktan başlık, özet ve akademik metaveri toplar; sonuçları AI ile karşılaştırıp sentezler. Tam web taraması veya tam makale erişimi değildir; atıf sayısı kalite garantisi sayılmaz, kaynakları açıp doğrula.", color = JarvisTextDim)
             }
         }
         item {
