@@ -269,6 +269,7 @@ fun EvolutionCenterScreen(
             SectionHeading("STARK INDUSTRIES // EVOLUTION", "JARVIS gelişim merkezi")
             Text("Proje analizi, kod inceleme, değişiklik karşılaştırma ve sürüm takibi.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
         }
+        item { HudCard { RemoteUpdatePanel() } }
         item {
             HudCard {
                 Row {
