@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -79,7 +80,9 @@ private object JarvisGitHub {
                 val message = runCatching { JSONObject(text).optString("message") }.getOrDefault(text)
                 throw IllegalStateException("GitHub HTTP $code: $message")
             }
-            return if (text.isBlank()) JSONObject() else JSONObject(text)
+            return if (text.isBlank()) JSONObject()
+                else if (text.trimStart().startsWith("[")) JSONObject().put("__array", JSONArray(text))
+                else JSONObject(text)
         } finally { connection.disconnect() }
     }
 
@@ -89,7 +92,7 @@ private object JarvisGitHub {
         return "@$user • ${repo.optString("full_name")} • ${repo.optString("default_branch")} dalı"
     }
     fun branches(context: Context): List<GhBranch> {
-        val array = JSONArray(request(context, "GET", "/repos/$REPO/branches?per_page=100").toString())
+        val array = request(context, "GET", "/repos/$REPO/branches?per_page=100").optJSONArray("__array") ?: JSONArray()
         return (0 until array.length()).mapNotNull { i ->
             val item = array.optJSONObject(i) ?: return@mapNotNull null
             GhBranch(item.optString("name"), item.optJSONObject("commit")?.optString("sha").orEmpty())
@@ -156,7 +159,7 @@ private object JarvisGitHub {
         }
     }
     fun pulls(context: Context): List<GhPull> {
-        val array = JSONArray(request(context, "GET", "/repos/$REPO/pulls?state=all&per_page=10").toString())
+        val array = request(context, "GET", "/repos/$REPO/pulls?state=all&per_page=10").optJSONArray("__array") ?: JSONArray()
         return (0 until array.length()).mapNotNull { i ->
             val item = array.optJSONObject(i) ?: return@mapNotNull null
             GhPull(item.optInt("number"), item.optString("title"), item.optString("state"), item.optString("html_url"))
@@ -201,7 +204,8 @@ fun GitHubWorkspacePanel() {
         Text("Gerçek GitHub API bağlantısı • syntaxxsl/JARVIS-Android • token cihazda şifreli saklanır.", color = JarvisTextDim)
         OutlinedTextField(
             value = token, onValueChange = { token = it }, modifier = Modifier.fillMaxWidth(),
-            label = { Text("Fine-grained GitHub token") }, singleLine = true
+            label = { Text("Fine-grained GitHub token") }, singleLine = true,
+            visualTransformation = PasswordVisualTransformation()
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = {
