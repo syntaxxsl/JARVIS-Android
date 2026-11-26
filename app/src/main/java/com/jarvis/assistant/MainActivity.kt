@@ -233,8 +233,10 @@ class MainActivity : ComponentActivity() {
                     backupModel = prefs.getString("backup_model", "llama-3.3-70b-versatile").orEmpty(),
                     backupUrl = prefs.getString("backup_base_url", "https://api.groq.com/openai/v1").orEmpty(),
                     messages = buildList {
-                        if (savedMemories.isNotEmpty()) {
-                            add("system" to ("Kullanıcının JARVIS hafızası; yalnızca mevcut isteğe gerçekten yardımcı olduğunda kullan. Gereksiz yere tekrar etme:\n" +
+                        val asksForMemory = listOf("hafızam", "hafızanda", "hatırlıyor musun", "daha önce söylemiştim", "hatırla")
+                            .any { clean.lowercase(java.util.Locale("tr", "TR")).contains(it) }
+                        if (asksForMemory && savedMemories.isNotEmpty()) {
+                            add("system" to ("Kullanıcının cihazda sakladığı JARVIS hafızası; yalnızca bu isteğe cevap vermek için gereken bilgileri kullan:\n" +
                                 savedMemories.takeLast(20).joinToString("\n") { "- " + it.take(500) }))
                         }
                         addAll(currentHistory)
