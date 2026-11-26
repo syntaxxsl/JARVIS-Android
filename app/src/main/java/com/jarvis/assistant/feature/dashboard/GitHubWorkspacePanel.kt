@@ -196,18 +196,6 @@ fun GitHubWorkspacePanel() {
             busy = false
         }
     }
-    LaunchedEffect(connected) {
-        if (connected) {
-            perform("GitHub deposu yükleniyor") {
-                branches = JarvisGitHub.branches(context)
-                if (branches.none { it.name == selectedBranch }) selectedBranch = branches.firstOrNull()?.name ?: "main"
-                files = JarvisGitHub.tree(context, selectedBranch)
-                runs = JarvisGitHub.runs(context)
-                pulls = JarvisGitHub.pulls(context)
-                "Dal, dosya, Actions ve PR listeleri hazır."
-            }
-        }
-    }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("GITHUB DEVELOPMENT WORKSPACE", color = JarvisCyan, fontWeight = FontWeight.Bold)
         Text("Gerçek GitHub API bağlantısı • syntaxxsl/JARVIS-Android • token cihazda şifreli saklanır.", color = JarvisTextDim)
@@ -220,6 +208,11 @@ fun GitHubWorkspacePanel() {
                 JarvisGitHub.saveToken(context, token)
                 perform("GitHub hesabı doğrulanıyor") {
                     val identity = JarvisGitHub.verify(context)
+                    branches = JarvisGitHub.branches(context)
+                    if (branches.none { it.name == selectedBranch }) selectedBranch = branches.firstOrNull()?.name ?: "main"
+                    files = JarvisGitHub.tree(context, selectedBranch)
+                    runs = JarvisGitHub.runs(context)
+                    pulls = JarvisGitHub.pulls(context)
                     connected = true
                     identity
                 }
@@ -247,17 +240,15 @@ fun GitHubWorkspacePanel() {
             }
             Text("DEPO DOSYALARI / DÜZENLEYİCİ", color = JarvisCyan, fontWeight = FontWeight.Bold)
             OutlinedTextField(filter, { filter = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Dosya ara") }, singleLine = true)
-            LazyColumn(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                items(files.filter { it.path.contains(filter, true) }.take(100), key = { it.path }) { file ->
-                    OutlinedButton(onClick = {
-                        selectedPath = file.path
-                        perform("Dosya açılıyor") {
-                            val loaded = JarvisGitHub.readFile(context, file.path, selectedBranch)
-                            editor = loaded.first; fileSha = loaded.second
-                            "${file.path} • ${editor.length} karakter yüklendi."
-                        }
-                    }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(file.path) }
-                }
+            files.filter { it.path.contains(filter, true) }.take(100).forEach { file ->
+                OutlinedButton(onClick = {
+                    selectedPath = file.path
+                    perform("Dosya açılıyor") {
+                        val loaded = JarvisGitHub.readFile(context, file.path, selectedBranch)
+                        editor = loaded.first; fileSha = loaded.second
+                        "${file.path} • ${editor.length} karakter yüklendi."
+                    }
+                }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(file.path) }
             }
             if (selectedPath.isNotBlank()) {
                 Text("DÜZENLENEN: $selectedPath", color = JarvisCyan, fontWeight = FontWeight.Bold)
