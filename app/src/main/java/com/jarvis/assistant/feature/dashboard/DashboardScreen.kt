@@ -201,6 +201,9 @@ fun DashboardScreen(
                                     MiniModule("JARVIS EVOLUTION", Icons.Default.AutoAwesome, Modifier.fillMaxWidth()) { page = "evolution" }
                                 }
                                 item {
+                                    MiniModule("MISSION CONTROL", Icons.Default.TrackChanges, Modifier.fillMaxWidth()) { page = "mission" }
+                                }
+                                item {
                                     HudCard {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(Icons.Default.Timeline, null, tint = JarvisCyan)
@@ -271,6 +274,7 @@ fun DashboardScreen(
                                 }
                             }
                         }
+                        "mission" -> MissionControlScreen(onSendPress = onSendPress)
                         "documents" -> {
                             val context = LocalContext.current
                             val scope = rememberCoroutineScope()
