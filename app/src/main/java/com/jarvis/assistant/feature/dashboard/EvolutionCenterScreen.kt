@@ -83,6 +83,10 @@ fun EvolutionCenterScreen(
     var scanning by remember { mutableStateOf(false) }
     var aiReview by remember { mutableStateOf("Henüz AI kod incelemesi yapılmadı.") }
     var aiReviewLoading by remember { mutableStateOf(false) }
+    var patchInstruction by remember { mutableStateOf("Derleme hatalarını, güvenlik risklerini ve performans sorunlarını düzelt; mevcut davranışı koru.") }
+    var patchDraft by remember { mutableStateOf("") }
+    var patchLoading by remember { mutableStateOf(false) }
+    var patchStatus by remember { mutableStateOf("Bir kaynak dosyası seçip güvenli düzeltme taslağı oluşturabilirsin.") }
     var buildRuns by remember { mutableStateOf(emptyList<BuildRun>()) }
     var buildHistoryStatus by remember { mutableStateOf("GitHub Actions geçmişi yükleniyor...") }
     var apkReleases by remember { mutableStateOf(emptyList<ApkRelease>()) }
@@ -93,6 +97,18 @@ fun EvolutionCenterScreen(
     var repoPreviewPath by remember { mutableStateOf("") }
     var repoPreview by remember { mutableStateOf("") }
     var repoLoading by remember { mutableStateOf(false) }
+
+    val savePatchLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        if (uri != null && patchDraft.isNotBlank()) {
+            val saved = runCatching {
+                context.contentResolver.openOutputStream(uri)?.use { stream ->
+                    stream.write(patchDraft.toByteArray(Charsets.UTF_8))
+                } ?: error("Dosya yazma akışı açılamadı.")
+            }
+            patchStatus = if (saved.isSuccess) "Düzeltme taslağı yeni dosyaya kaydedildi. Orijinal kaynak değiştirilmedi."
+                else "Dosya kaydedilemedi: " + (saved.exceptionOrNull()?.message ?: "bilinmeyen hata")
+        }
+    }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         uris.forEach { uri ->
@@ -364,6 +380,55 @@ fun EvolutionCenterScreen(
                 OutlinedButton(onClick = {
                     if (files.size >= 2) diffReport = compareText(files[files.lastIndex - 1], files.last())
                 }, enabled = files.size >= 2, modifier = Modifier.fillMaxWidth()) { Text("Son iki dosyayı karşılaştır") }
+            }
+        }
+        item {
+            HudCard {
+                Text("KONTROLLÜ KOD DÜZELTME", color = JarvisCyan, fontWeight = FontWeight.Bold)
+                Text("Seçtiğin son dosya için AI'dan tam dosya düzeltme taslağı iste. Sonucu yeni bir dosya olarak dışa aktar; orijinal dosya otomatik değiştirilmez.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                OutlinedTextField(
+                    value = patchInstruction,
+                    onValueChange = { patchInstruction = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Düzeltme hedefi") },
+                    minLines = 2,
+                    maxLines = 4
+                )
+                Button(
+                    onClick = {
+                        val source = files.lastOrNull() ?: return@Button
+                        patchLoading = true
+                        patchDraft = ""
+                        patchStatus = source.name + " için düzeltme hazırlanıyor..."
+                        val prompt = "Sen deneyimli Android/Kotlin yazılım mühendisisin. Aşağıdaki TEK kaynak dosyası için istenen düzeltmeyi uygula. Çıktı yalnızca dosyanın TAM ve derlenebilir yeni içeriği olsun; Markdown kod çiti, açıklama veya sahte başarı iddiası ekleme. Mevcut paket adını, API sözleşmelerini ve mimariyi koru. Kullanılmayan importları, null durumlarını, hata yönetimini ve Android yaşam döngüsünü kontrol et. İstenen hedef: " + patchInstruction + "\nDOSYA: " + source.name + "\nKAYNAK KOD:\n" + source.text.take(18000)
+                        onAskAi(prompt) { result ->
+                            patchDraft = result.trim()
+                            patchLoading = false
+                            patchStatus = if (patchDraft.isBlank()) "AI boş düzeltme döndürdü." else "Taslak hazır. Önce incele, sonra yeni dosya olarak kaydet."
+                        }
+                    },
+                    enabled = files.isNotEmpty() && patchInstruction.isNotBlank() && !patchLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(if (patchLoading) "Düzeltme hazırlanıyor..." else "AI düzeltme taslağı oluştur") }
+                if (patchLoading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = JarvisCyan)
+                Text(patchStatus, color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                if (patchDraft.isNotBlank()) {
+                    OutlinedTextField(
+                        value = patchDraft,
+                        onValueChange = { patchDraft = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("İncele ve gerekirse düzenle") },
+                        minLines = 5,
+                        maxLines = 12
+                    )
+                    OutlinedButton(
+                        onClick = {
+                            val name = (files.lastOrNull()?.name ?: "jarvis-source").substringBeforeLast('.') + ".jarvis-proposed.txt"
+                            savePatchLauncher.launch(name)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Taslağı yeni dosya olarak dışa aktar") }
+                }
             }
         }
         item {
