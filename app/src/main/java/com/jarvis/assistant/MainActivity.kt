@@ -287,12 +287,12 @@ class MainActivity : ComponentActivity() {
             database.chatMessageDao().insert(ChatMessageEntity(conversationId = DEFAULT_CONVERSATION, role = "user", content = clean))
             val reply = try {
                 JarvisAiClient.chatWithFallback(
-                    primaryKey = prefs.getString("api_key", "").orEmpty(),
-                    primaryModel = prefs.getString("model", "openrouter/free").orEmpty(),
-                    primaryUrl = prefs.getString("base_url", "https://openrouter.ai/api/v1").orEmpty(),
-                    backupKey = prefs.getString("backup_api_key", "").orEmpty(),
-                    backupModel = prefs.getString("backup_model", "llama-3.3-70b-versatile").orEmpty(),
-                    backupUrl = prefs.getString("backup_base_url", "https://api.groq.com/openai/v1").orEmpty(),
+                    primaryKey = readSecureString("api_key"),
+                    primaryModel = readSecureString("model", "openrouter/free"),
+                    primaryUrl = readSecureString("base_url", "https://openrouter.ai/api/v1"),
+                    backupKey = readSecureString("backup_api_key"),
+                    backupModel = readSecureString("backup_model", "llama-3.3-70b-versatile"),
+                    backupUrl = readSecureString("backup_base_url", "https://api.groq.com/openai/v1"),
                     messages = buildList {
                         val normalizedQuery = clean.lowercase(java.util.Locale("tr", "TR"))
                             .replace('ı', 'i').replace('ğ', 'g').replace('ü', 'u')
