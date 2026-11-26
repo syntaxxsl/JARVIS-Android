@@ -287,7 +287,7 @@ class MainActivity : ComponentActivity() {
                             .replace('ı', 'i').replace('ğ', 'g').replace('ü', 'u')
                             .replace('ş', 's').replace('ö', 'o').replace('ç', 'c')
                         val memoryTerms = normalizedQuery.split(Regex("[^\\\\p{L}\\\\p{N}]+")).filter { it.length >= 3 }.distinct()
-                        val asksForMemory = listOf("hafızam", "hafızanda", "hatırlıyor musun", "daha önce söylemiştim", "hatırla")
+                        val asksForMemory = listOf("hafizam", "hafizanda", "hatirliyor musun", "daha once soylemistim", "hatirla")
                             .any { normalizedQuery.contains(it) }
                         val relevantMemories = savedMemories.mapNotNull { memory ->
                             val normalizedMemory = memory.lowercase(java.util.Locale("tr", "TR"))
