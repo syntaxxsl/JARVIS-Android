@@ -53,7 +53,7 @@ fun KnowledgeCenterScreen() {
     val scope = rememberCoroutineScope()
     var documents by remember { mutableStateOf(KnowledgeStore.list(context)) }
     var query by remember { mutableStateOf("") }
-    var status by remember { mutableStateOf("PDF, görsel ve metin dosyalarını kişisel bilgi kütüphanene ekle.") }
+    var status by remember { mutableStateOf("PDF, görsel ve metin dosyalarını kişisel bilgi kütüphanene ekle. İlgili kısa bölümler, soru sorulduğunda yapılandırdığın AI sağlayıcısına bağlam olarak gönderilebilir.") }
     var importing by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf(emptyList<Pair<KnowledgeDocument, String>>()) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
@@ -142,7 +142,7 @@ fun KnowledgeCenterScreen() {
                 colors = CardDefaults.cardColors(containerColor = JarvisPanel)) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(doc.title, color = JarvisText, fontWeight = FontWeight.Bold)
-                    Text("${doc.text.length} karakter • yerel kayıt", color = JarvisTextDim, style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
+                    Text("${doc.text.length} karakter • şifreli yerel kayıt", color = JarvisTextDim, style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
                     TextButton(onClick = {
                         KnowledgeStore.delete(context, doc.id)
                         documents = KnowledgeStore.list(context)
