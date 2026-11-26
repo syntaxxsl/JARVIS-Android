@@ -232,7 +232,13 @@ class MainActivity : ComponentActivity() {
                     backupKey = prefs.getString("backup_api_key", "").orEmpty(),
                     backupModel = prefs.getString("backup_model", "llama-3.3-70b-versatile").orEmpty(),
                     backupUrl = prefs.getString("backup_base_url", "https://api.groq.com/openai/v1").orEmpty(),
-                    messages = currentHistory
+                    messages = buildList {
+                        if (savedMemories.isNotEmpty()) {
+                            add("system" to ("Kullanıcının JARVIS hafızası; yalnızca mevcut isteğe gerçekten yardımcı olduğunda kullan. Gereksiz yere tekrar etme:\n" +
+                                savedMemories.takeLast(20).joinToString("\n") { "- " + it.take(500) }))
+                        }
+                        addAll(currentHistory)
+                    }
                 )
             } catch (e: CancellationException) {
                 throw e
