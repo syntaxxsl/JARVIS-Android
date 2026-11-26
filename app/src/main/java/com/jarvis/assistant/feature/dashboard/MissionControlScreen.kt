@@ -58,6 +58,7 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
     var planning by remember { mutableStateOf(false) }
     var executing by remember { mutableStateOf(false) }
     var criticEnabled by remember { mutableStateOf(true) }
+    var debateEnabled by remember { mutableStateOf(true) }
     var status by remember { mutableStateOf("Görev hedefini yaz ve önce plan oluştur.") }
     var runToken by remember { mutableStateOf(0) }
     val steps = remember { mutableStateListOf<MissionStep>() }
@@ -111,9 +112,15 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
                     maxLines = 5,
                     placeholder = { Text("Örn. JARVIS uygulamasının güvenlik ve AI mimarisini değerlendir...") }
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = criticEnabled, onCheckedChange = { criticEnabled = it })
-                    Text("Her adımı ikinci kontrol ajanıyla doğrula", color = JarvisTextDim)
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = debateEnabled, onCheckedChange = { debateEnabled = it })
+                        Text("Karşıt görüş ajanı ile alternatif analiz", color = JarvisTextDim)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = criticEnabled, onCheckedChange = { criticEnabled = it })
+                        Text("Critic ajanı ile hata ve güvenlik kontrolü", color = JarvisTextDim)
+                    }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
@@ -209,16 +216,25 @@ fun MissionControlScreen(onSendPress: (String, (String) -> Unit) -> Unit) {
                                         if (token != runToken) break
                                         if (result.isNullOrBlank()) {
                                             steps[index] = step.copy(state = "HATA / ZAMAN AŞIMI", result = "Yanıt alınamadı veya istek zaman aşımına uğradı.")
-                                        } else if (criticEnabled) {
-                                            steps[index] = step.copy(state = "DOĞRULANIYOR", result = result.take(5000))
-                                            val review = askJarvis(
-                                                "Sen JARVIS Critic ve doğrulama ajanısın. Aşağıdaki görev sonucunu bağımsız bir denetçi gibi kontrol et. Gerçek olmayan başarı iddialarını, mantık hatalarını, eksik varsayımları, güvenlik risklerini ve doğrulanması gereken noktaları belirt. Kısa ve net ol; sonucu yeniden yazma.\nHEDEF: $target\nGÖREV: ${step.title}\nSONUÇ: ${result.take(3500)}"
-                                            )
+                                        } else if (criticEnabled || debateEnabled) {
+                                            steps[index] = step.copy(state = "UZMAN AJANLAR İNCELİYOR", result = result.take(5000))
+                                            val challenge = if (debateEnabled) askJarvis(
+                                                "Sen JARVIS Challenger ajanısın. Önceki ajanın sonucuna katılmak zorunda değilsin. Alternatif yaklaşım üret; zayıf varsayımları, gözden kaçan riskleri ve farklı çözüm yollarını bul. Kanıtsız itiraz üretme. Kısa ve somut değerlendir.\nHEDEF: $target\nGÖREV: ${step.title}\nİLK SONUÇ: ${result.take(3000)}"
+                                            ) else null
                                             if (token != runToken) break
-                                            val reviewText = review?.take(1800) ?: "İkinci kontrol yanıtı alınamadı."
+                                            val review = if (criticEnabled) askJarvis(
+                                                "Sen JARVIS Critic ve doğrulama ajanısın. İlk sonucu ve karşıt görüşü bağımsız denetle. Gerçek olmayan başarı iddialarını, mantık hatalarını, eksik varsayımları, güvenlik risklerini ve doğrulanması gereken noktaları belirt. Çelişki varsa açıkça göster. Kısa ve net ol; sonucu yeniden yazma.\nHEDEF: $target\nGÖREV: ${step.title}\nİLK SONUÇ: ${result.take(3000)}\nKARŞIT GÖRÜŞ: ${challenge ?: "Çalıştırılmadı"}"
+                                            ) else null
+                                            if (token != runToken) break
+                                            val challengeText = challenge?.take(1200) ?: if (debateEnabled) "Karşıt görüş alınamadı." else ""
+                                            val reviewText = review?.take(1800) ?: if (criticEnabled) "Critic kontrolü alınamadı." else ""
+                                            val agentNotes = listOf(
+                                                if (challengeText.isNotBlank()) "CHALLENGER:\n$challengeText" else "",
+                                                if (reviewText.isNotBlank()) "CRITIC:\n$reviewText" else ""
+                                            ).filter { it.isNotBlank() }.joinToString("\n\n")
                                             steps[index] = step.copy(
-                                                state = if (review.isNullOrBlank()) "TAMAMLANDI • KONTROL YOK" else "TAMAMLANDI • İKİNCİ KONTROL",
-                                                result = result.take(5000) + "\n\nİKİNCİ AJAN KONTROLÜ:\n" + reviewText
+                                                state = if (agentNotes.isBlank()) "TAMAMLANDI • EK KONTROL YOK" else "TAMAMLANDI • ÇOKLU AJAN KONTROLÜ",
+                                                result = result.take(5000) + if (agentNotes.isBlank()) "" else "\n\n$agentNotes"
                                             )
                                         } else {
                                             steps[index] = step.copy(state = "TAMAMLANDI", result = result.take(5000))
