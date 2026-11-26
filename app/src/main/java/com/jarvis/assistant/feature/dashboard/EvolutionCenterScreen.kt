@@ -37,6 +37,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -63,12 +65,14 @@ private data class EvolutionFile(val uri: Uri, val name: String, val text: Strin
 private data class Diagnostic(val name: String, val detail: String, val passed: Boolean)
 private data class BuildRun(val number: Int, val status: String, val conclusion: String, val sha: String, val url: String)
 private data class ApkRelease(val title: String, val tag: String, val published: String, val assetName: String, val downloadUrl: String, val releaseUrl: String)
+private data class RepoSourceFile(val path: String, val size: Int, val downloadUrl: String)
 
 @Composable
 fun EvolutionCenterScreen(
     onAskAi: (String, (String) -> Unit) -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val files = remember { mutableStateListOf<EvolutionFile>() }
     val history = remember { mutableStateListOf<String>() }
     var diagnostics by remember { mutableStateOf(emptyList<Diagnostic>()) }
@@ -82,6 +86,12 @@ fun EvolutionCenterScreen(
     var buildHistoryStatus by remember { mutableStateOf("GitHub Actions geçmişi yükleniyor...") }
     var apkReleases by remember { mutableStateOf(emptyList<ApkRelease>()) }
     var releaseHistoryStatus by remember { mutableStateOf("APK sürüm arşivi yükleniyor...") }
+    var repoFiles by remember { mutableStateOf(emptyList<RepoSourceFile>()) }
+    var repoStatus by remember { mutableStateOf("GitHub kaynak ağacı yükleniyor...") }
+    var repoFilter by remember { mutableStateOf("") }
+    var repoPreviewPath by remember { mutableStateOf("") }
+    var repoPreview by remember { mutableStateOf("") }
+    var repoLoading by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         uris.forEach { uri ->
@@ -192,6 +202,37 @@ fun EvolutionCenterScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        val result = runCatching {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val connection = java.net.URL("https://api.github.com/repos/syntaxxsl/JARVIS-Android/git/trees/main?recursive=1").openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 10000
+                connection.readTimeout = 15000
+                connection.setRequestProperty("Accept", "application/vnd.github+json")
+                try {
+                    val body = connection.inputStream.bufferedReader().use { it.readText() }
+                    val tree = org.json.JSONObject(body).optJSONArray("tree") ?: org.json.JSONArray()
+                    buildList {
+                        for (i in 0 until tree.length()) {
+                            val item = tree.optJSONObject(i) ?: continue
+                            if (item.optString("type") == "blob") {
+                                add(RepoSourceFile(item.optString("path"), item.optInt("size"), item.optString("url")))
+                            }
+                        }
+                    }
+                } finally {
+                    connection.disconnect()
+                }
+            }
+        }
+        result.onSuccess {
+            repoFiles = it
+            repoStatus = if (it.isEmpty()) "Kaynak dosyası bulunamadı." else "main dalında ${it.size} kaynak dosyası bulundu. Gezgin salt okunurdur."
+        }.onFailure {
+            repoStatus = "GitHub kaynak ağacı alınamadı: ${it.message ?: "ağ hatası"}"
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -218,8 +259,63 @@ fun EvolutionCenterScreen(
         item {
             HudCard {
                 Row {
+                    androidx.compose.material3.Icon(Icons.Default.Code, null, tint = JarvisCyan)
+                    Text("GITHUB KAYNAK GEZGİNİ", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                }
+                Text("syntaxxsl/JARVIS-Android • main dalı. Gerçek GitHub dosya ağacını gösterir; seçtiğin kaynak kodunu uygulama içinde salt okunur önizler.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
+                Text(repoStatus, color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                OutlinedTextField(repoFilter, { repoFilter = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Dosya veya klasör ara") }, singleLine = true)
+                val visibleFiles = repoFiles.filter { it.path.contains(repoFilter, true) }.take(80)
+                visibleFiles.forEach { file ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column(Modifier.weight(1f)) {
+                            Text(file.path, color = JarvisText, style = MaterialTheme.typography.bodySmall)
+                            Text("${file.size} bayt", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                repoLoading = true
+                                repoPreviewPath = file.path
+                                repoPreview = "Kaynak dosyası yükleniyor..."
+                                scope.launch {
+                                    val loaded = runCatching {
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                            val rawUrl = "https://raw.githubusercontent.com/syntaxxsl/JARVIS-Android/main/" +
+                                                file.path.split("/").joinToString("/") { segment ->
+                                                    java.net.URLEncoder.encode(segment, "UTF-8").replace("+", "%20")
+                                                }
+                                            val connection = java.net.URL(rawUrl).openConnection() as java.net.HttpURLConnection
+                                            connection.connectTimeout = 8000
+                                            connection.readTimeout = 10000
+                                            try { connection.inputStream.bufferedReader().use { it.readText().take(20000) } }
+                                            finally { connection.disconnect() }
+                                        }
+                                    }
+                                    repoPreview = loaded.getOrElse { "Dosya önizlemesi alınamadı: ${it.message ?: "ağ hatası"}" }
+                                    repoLoading = false
+                                }
+                            },
+                            enabled = !repoLoading,
+                            modifier = Modifier.padding(start = 6.dp)
+                        ) { Text("GÖR") }
+                    }
+                }
+                if (repoPreviewPath.isNotBlank()) {
+                    Divider(color = JarvisCyan.copy(alpha = .20f))
+                    Text(repoPreviewPath, color = JarvisCyan, fontWeight = FontWeight.Bold)
+                    Text(repoPreview, color = JarvisText, style = MaterialTheme.typography.labelSmall)
+                    Text("Önizleme salt okunurdur; kaynak kodunu değiştirme veya GitHub'a gönderme yapmaz.", color = JarvisTextDim, style = MaterialTheme.typography.labelSmall)
+                }
+                OutlinedButton(onClick = {
+                    runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse("https://github.com/syntaxxsl/JARVIS-Android/tree/main"))) }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Depoyu GitHub'da aç") }
+            }
+        }
+        item {
+            HudCard {
+                Row {
                     androidx.compose.material3.Icon(Icons.Default.FolderOpen, null, tint = JarvisCyan)
-                    Text("PROJE DOSYALARI GEZGİNİ", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                    Text("CİHAZDAN SEÇİLEN DOSYALAR", color = JarvisText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
                 }
                 Text("Android dosya seçicisiyle proje klasöründen Kotlin, Java, XML, Gradle veya metin dosyalarını seç. JARVIS seçtiğin dosyaları cihaz içinde inceler.", color = JarvisTextDim, style = MaterialTheme.typography.bodySmall)
                 Button(onClick = { picker.launch(arrayOf("text/*", "application/xml", "application/json", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) {
